@@ -9,6 +9,7 @@ import ScrollFloat from './ScrollFloat';
 import TextType from './TextType';
 import Lanyard from './Lanyard';
 import CircularGallery from './CircularGallery';
+import GlassIcons from './GlassIcons';
 
 // ==================== Canvas Texture Helpers for 3D Lanyard Card ====================
 const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
@@ -296,6 +297,48 @@ const navItems = [
   { label: "01 HOME", href: "#hero" },
   { label: "02 BIO & LIFE", href: "#experience" },
   { label: "03 CORE SKILLS", href: "#competencies" },
+];
+
+const filterIcons = [
+  {
+    value: 'all',
+    label: '全部',
+    color: 'blue',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+        <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+        <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+        <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+        <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+      </svg>
+    )
+  },
+  {
+    value: 'life_style',
+    label: '生活',
+    color: 'orange',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+        <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+        <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+        <line x1="6" y1="1" x2="6" y2="4"></line>
+        <line x1="10" y1="1" x2="10" y2="4"></line>
+        <line x1="14" y1="1" x2="14" y2="4"></line>
+      </svg>
+    )
+  },
+  {
+    value: 'tech',
+    label: '思考',
+    color: 'purple',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
+        <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1 .3 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
+        <path d="M9 18h6"></path>
+        <path d="M10 22h4"></path>
+      </svg>
+    )
+  }
 ];
 
 export default function App() {
@@ -852,19 +895,13 @@ export default function App() {
                   </h2>
                 </div>
                 
-                {/* 过滤器 */}
-                <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
-                  {['all', 'life_style', 'tech'].map((tab) => (
-                    <button 
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={"px-3 py-1.5 rounded-full border transition-all cursor-pointer " + (activeTab === tab ? "bg-[#FF6B00] border-[#FF6B00] text-black font-bold" : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white")}
-                    >
-                      {tab === "all" && "全部记录"}
-                      {tab === "life_style" && "🍳 生活"}
-                      {tab === "tech" && "📝 思考"}
-                    </button>
-                  ))}
+                {/* 3D 悬浮玻璃过滤器 */}
+                <div style={{ fontSize: '8px', overflow: 'visible' }}>
+                  <GlassIcons
+                    items={filterIcons}
+                    activeValue={activeTab}
+                    onChange={setActiveTab}
+                  />
                 </div>
               </div>
 
