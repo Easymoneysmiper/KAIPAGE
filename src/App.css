@@ -193,3 +193,12 @@
   will-change: transform, opacity;
 }
 
+/* 经历板块视频背景与消隐遮罩 */
+.bio-bg-container {
+  mix-blend-mode: screen; /* 增强与深色背景的融合度 */
+}
+
+.bio-bg-video {
+  transform-origin: center center;
+  object-fit: cover;
+}

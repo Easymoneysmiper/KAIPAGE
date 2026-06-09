@@ -438,6 +438,21 @@ export default function App() {
       ease: 'power4.out'
     }, 0.3);
 
+    // 5. Background video scale & fade-in (Cinematic Reveal) linked to scroll scrub
+    gsap.fromTo('.bio-bg-video', 
+      { scale: 1.1, opacity: 0 },
+      {
+        scale: 1.0,
+        opacity: 0.3,
+        scrollTrigger: {
+          trigger: experienceRef.current,
+          start: 'top bottom', // starts when the top of the section enters the bottom of the viewport
+          end: 'top 30%',     // ends when the top of the section is at 30% from the top of the viewport
+          scrub: 1,           // smooth scrubbing, takes 1 second to catch up to scroll position
+        }
+      }
+    );
+
   }, { scope: experienceRef });
 
   const galleryItems = React.useMemo(() => {
@@ -922,16 +937,33 @@ export default function App() {
       </section>
 
       {/* ==================== 3. 个人经历与核心指标 (BIO) ==================== */}
-      <section id="experience" ref={experienceRef} className="relative bg-[#0F0F12] py-28 border-b border-neutral-900">
+      <section id="experience" ref={experienceRef} className="relative bg-[#0F0F12] py-28 border-b border-neutral-900 overflow-hidden">
         
+        {/* 背景视频与上下 200px 渐变消隐遮罩 */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none z-10 bio-bg-container">
+          <video
+            src="/bio-bg.webm"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover bio-bg-video"
+            style={{ opacity: 0, transform: 'scale(1.1)' }}
+          />
+          {/* 顶部消隐遮罩 */}
+          <div className="absolute top-0 left-0 right-0 h-[200px] bg-gradient-to-b from-[#0F0F12] to-transparent z-15 pointer-events-none" />
+          {/* 底部消隐遮罩 */}
+          <div className="absolute bottom-0 left-0 right-0 h-[200px] bg-gradient-to-t from-[#0F0F12] to-transparent z-15 pointer-events-none" />
+        </div>
+
         {/* 背景大格网划分线 */}
-        <div className="absolute inset-0 pointer-events-none z-0 grid grid-cols-1 md:grid-cols-12 max-w-[1700px] mx-auto w-full">
+        <div className="absolute inset-0 pointer-events-none z-20 grid grid-cols-1 md:grid-cols-12 max-w-[1700px] mx-auto w-full">
           <div className="col-span-3 border-r border-neutral-900/60 h-full"></div>
           <div className="col-span-6 border-r border-neutral-900/60 h-full"></div>
           <div className="col-span-3 h-full"></div>
         </div>
 
-        <div className="relative w-full max-w-[1700px] mx-auto px-6 md:px-12 z-20">
+        <div className="relative w-full max-w-[1700px] mx-auto px-6 md:px-12 z-30">
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
             
