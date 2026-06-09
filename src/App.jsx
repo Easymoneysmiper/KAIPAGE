@@ -12,6 +12,11 @@ import CircularGallery from './CircularGallery';
 import GlassIcons from './GlassIcons';
 import ShinyText from './ShinyText';
 import Shuffle from './Shuffle';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useGSAP } from '@gsap/react';
+
+gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 // ==================== Canvas Texture Helpers for 3D Lanyard Card ====================
 const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
@@ -306,6 +311,7 @@ const filterIcons = [
     value: 'all',
     label: '全部',
     color: 'blue',
+    customClass: 'animate-filter-btn',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
         <rect x="3" y="3" width="7" height="7" rx="1"></rect>
@@ -319,6 +325,7 @@ const filterIcons = [
     value: 'life_style',
     label: '生活',
     color: 'orange',
+    customClass: 'animate-filter-btn',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
         <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
@@ -333,6 +340,7 @@ const filterIcons = [
     value: 'tech',
     label: '思考',
     color: 'purple',
+    customClass: 'animate-filter-btn',
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-full h-full">
         <path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1 .3 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"></path>
@@ -368,6 +376,69 @@ export default function App() {
   const [isLanyardOpen, setIsLanyardOpen] = useState(false);
   const [hasOpenedOnce, setHasOpenedOnce] = useState(false);
   const lanyardRef = useRef(null);
+  const experienceRef = useRef(null);
+
+  useGSAP(() => {
+    if (!experienceRef.current) return;
+
+    // Define initial states (to prevent flash of unstyled/unanimated content, we can set them in GSAP immediately)
+    gsap.set('.animate-profile-card', { x: -200, opacity: 0 });
+    gsap.set('.animate-bio-title', { y: -80, opacity: 0 });
+    gsap.set('.animate-bio-subtitle', { y: -80, opacity: 0 });
+    gsap.set('.animate-filter-btn', { x: 150, y: -150, opacity: 0 });
+    gsap.set('.animate-gallery-wrapper', { x: 300, opacity: 0 });
+
+    // Create ScrollTrigger timeline
+    const tl = gsap.timeline({
+      scrollTrigger: {
+        trigger: experienceRef.current,
+        start: 'top 75%', // trigger when top of section is 75% down the viewport
+        once: true, // run only once
+      }
+    });
+
+    // 1. Profile card enters from left
+    tl.to('.animate-profile-card', {
+      x: 0,
+      opacity: 1,
+      duration: 1.5,
+      ease: 'power4.out'
+    }, 0);
+
+    // 2. Titles drop from the top
+    tl.to('.animate-bio-subtitle', {
+      y: 0,
+      opacity: 1,
+      duration: 1.2,
+      ease: 'back.out(1.1)'
+    }, 0.1);
+
+    tl.to('.animate-bio-title', {
+      y: 0,
+      opacity: 1,
+      duration: 1.2,
+      ease: 'back.out(1.1)'
+    }, 0.2);
+
+    // 3. Filter buttons drop from top-right and sort
+    tl.to('.animate-filter-btn', {
+      x: 0,
+      y: 0,
+      opacity: 1,
+      duration: 1.4,
+      ease: 'back.out(1.3)',
+      stagger: 0.12
+    }, 0.15);
+
+    // 4. Circular Gallery slides from right
+    tl.to('.animate-gallery-wrapper', {
+      x: 0,
+      opacity: 1,
+      duration: 1.6,
+      ease: 'power4.out'
+    }, 0.3);
+
+  }, { scope: experienceRef });
 
   const galleryItems = React.useMemo(() => {
     return [
@@ -851,7 +922,7 @@ export default function App() {
       </section>
 
       {/* ==================== 3. 个人经历与核心指标 (BIO) ==================== */}
-      <section id="experience" className="relative bg-[#0F0F12] py-28 border-b border-neutral-900">
+      <section id="experience" ref={experienceRef} className="relative bg-[#0F0F12] py-28 border-b border-neutral-900">
         
         {/* 背景大格网划分线 */}
         <div className="absolute inset-0 pointer-events-none z-0 grid grid-cols-1 md:grid-cols-12 max-w-[1700px] mx-auto w-full">
@@ -865,7 +936,7 @@ export default function App() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
             
             {/* 左侧头像大卡片/抽象艺术图 (占 4 列) */}
-            <div className="lg:col-span-4 space-y-6">
+            <div className="lg:col-span-4 space-y-6 animate-profile-card">
               <div className="relative group">
                 <ProfileCard
                   name="彭凯"
@@ -888,7 +959,7 @@ export default function App() {
             <div className="lg:col-span-8 space-y-8">
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-neutral-800/80 pb-5">
                 <div className="space-y-2">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 animate-bio-subtitle">
                     <Shuffle
                       text="LIFE & CODING REFLECTION"
                       className="uppercase tracking-[0.2em] text-[#FF6B00]"
@@ -906,7 +977,7 @@ export default function App() {
                       textAlign="left"
                     />
                   </div>
-                  <h2 className="font-display text-2xl md:text-3xl font-black tracking-tighter uppercase text-white leading-none">
+                  <h2 className="font-display text-2xl md:text-3xl font-black tracking-tighter uppercase text-white leading-none animate-bio-title">
                     <ShinyText
                       text="✨ 极客生活与深度思考"
                       speed={2}
@@ -932,7 +1003,7 @@ export default function App() {
               </div>
 
               {/* 3D 环形相册展示 */}
-              <div style={{ height: '380px', position: 'relative' }} className="w-full">
+              <div style={{ height: '380px', position: 'relative' }} className="w-full animate-gallery-wrapper">
                 <CircularGallery
                   items={galleryItems}
                   bend={0}

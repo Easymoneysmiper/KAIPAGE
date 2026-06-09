@@ -182,3 +182,14 @@
     border-right-color: var(--border);
   }
 }
+
+/* 经历与生活板块入场动画初始状态 */
+.animate-profile-card,
+.animate-bio-title,
+.animate-bio-subtitle,
+.animate-filter-btn,
+.animate-gallery-wrapper {
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
