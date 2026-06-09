@@ -1,0 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Nunito', 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Nunito', 'Outfit', sans-serif;
+  --font-mono: 'Nunito', sans-serif;
+  --font-code: ui-monospace, Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+}
+
+body {
+  font-family: 'Nunito', 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Custom scrollbar and aesthetics */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0A0C;
+}
+::-webkit-scrollbar-thumb {
+  background: #1F1F24;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FF6B00;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
