@@ -324,6 +324,21 @@ export default function App() {
   const [hasOpenedOnce, setHasOpenedOnce] = useState(false);
   const lanyardRef = useRef(null);
 
+  const galleryItems = React.useMemo(() => {
+    return [
+      {
+        category: 'life_style',
+        image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&w=800&q=80',
+        text: '深夜咖啡与机械键盘的节律'
+      },
+      {
+        category: 'tech',
+        image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80',
+        text: 'Vibe Coding 带来开发新范式吗？'
+      }
+    ].filter(item => activeTab === 'all' || item.category === activeTab);
+  }, [activeTab]);
+
   useEffect(() => {
     if (!isLanyardOpen) return;
     const handleOutsideClick = (e) => {
@@ -856,20 +871,7 @@ export default function App() {
               {/* 3D 环形相册展示 */}
               <div style={{ height: '380px', position: 'relative' }} className="w-full">
                 <CircularGallery
-                  items={
-                    [
-                      {
-                        category: 'life_style',
-                        image: 'https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&w=800&q=80',
-                        text: '深夜咖啡与机械键盘的节律'
-                      },
-                      {
-                        category: 'tech',
-                        image: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80',
-                        text: 'Vibe Coding 带来开发新范式吗？'
-                      }
-                    ].filter(item => activeTab === 'all' || item.category === activeTab)
-                  }
+                  items={galleryItems}
                   bend={0}
                   textColor="#ffffff"
                   borderRadius={0.16}

@@ -560,10 +560,34 @@ export default function CircularGallery({
   scrollEase = 0.05
 }) {
   const containerRef = useRef(null);
+  const appRef = useRef(null);
+  const prevItemsRef = useRef(null);
+
+  const checkItemsEqual = (a, b) => {
+    if (!a || !b) return a === b;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (a[i].image !== b[i].image || a[i].text !== b[i].text) return false;
+    }
+    return true;
+  };
+
   useEffect(() => {
     if (!containerRef.current) return;
+
+    if (appRef.current && checkItemsEqual(items, prevItemsRef.current)) {
+      return;
+    }
+
+    prevItemsRef.current = items;
     let app;
     let isMounted = true;
+
+    if (appRef.current) {
+      appRef.current.destroy();
+      appRef.current = null;
+    }
+
     resolveFont(font, fontUrl).then(resolvedFont => {
       if (!isMounted || !containerRef.current) return;
       app = new App(containerRef.current, {
@@ -575,11 +599,19 @@ export default function CircularGallery({
         scrollSpeed,
         scrollEase
       });
+      appRef.current = app;
     });
+
     return () => {
       isMounted = false;
-      if (app) app.destroy();
+      if (app) {
+        app.destroy();
+        if (appRef.current === app) {
+          appRef.current = null;
+        }
+      }
     };
   }, [items, bend, textColor, borderRadius, font, fontUrl, scrollSpeed, scrollEase]);
+
   return <div className="circular-gallery" ref={containerRef} />;
 }
