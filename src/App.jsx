@@ -354,6 +354,9 @@ const filterIcons = [
 export default function App() {
   // 1. 滚动进度 state
   const [scrollProgress, setScrollProgress] = useState(0);
+  const [activeNavIndex, setActiveNavIndex] = useState(0);
+  const isScrollingToSection = useRef(false);
+  const scrollTimeoutRef = useRef(null);
   const [activeTab, setActiveTab] = useState('all');
 
   // 2. 交互智能体（Travel Agent）模拟器核心 State
@@ -503,9 +506,33 @@ export default function App() {
       if (totalScroll > 0) {
         setScrollProgress((window.pageYOffset / totalScroll) * 100);
       }
+
+      // 避免由于点击导航触发平滑滚动而导致高亮块在中间选项和目标选项之间抖动
+      if (isScrollingToSection.current) return;
+
+      const sections = ['hero', 'experience', 'competencies'];
+      const triggerY = window.innerHeight * 0.4; // 视口 40% 的黄金分割点作为激活线
+      
+      let currentActive = 0;
+      for (let i = 0; i < sections.length; i++) {
+        const el = document.getElementById(sections[i]);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= triggerY) {
+            currentActive = i;
+          }
+        }
+      }
+      setActiveNavIndex(currentActive);
     };
+    
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    handleScroll(); // 首次加载同步当前所在区间
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
   }, []);
 
   // 交互式 Canvas背景网络粒子
@@ -775,7 +802,15 @@ export default function App() {
                 particleCount={19}
                 particleDistances={[90, 10]}
                 particleR={200}
-                initialActiveIndex={0}
+                activeIndex={activeNavIndex}
+                onActiveIndexChange={(index) => {
+                  setActiveNavIndex(index);
+                  isScrollingToSection.current = true;
+                  if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+                  scrollTimeoutRef.current = setTimeout(() => {
+                    isScrollingToSection.current = false;
+                  }, 1000);
+                }}
                 animationTime={600}
                 timeVariance={1400}
                 colors={[1, 2, 3, 1, 2, 3, 1, 4]}

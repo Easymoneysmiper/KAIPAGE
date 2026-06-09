@@ -111,6 +111,11 @@
   display: grid;
   place-items: center;
   z-index: 1;
+  transition: 
+    left 0.5s var(--linear-ease), 
+    top 0.5s var(--linear-ease), 
+    width 0.5s var(--linear-ease), 
+    height 0.5s var(--linear-ease);
 }
 
 .gooey-nav-container .effect.text {
