@@ -293,9 +293,8 @@ const TerminalIcon = () => (
 
 const navItems = [
   { label: "01 HOME", href: "#hero" },
-  { label: "02 BIO", href: "#experience" },
+  { label: "02 BIO & LIFE", href: "#experience" },
   { label: "03 CORE SKILLS", href: "#competencies" },
-  { label: "04 LIFE SNAPS", href: "#life" },
 ];
 
 export default function App() {
@@ -824,6 +823,93 @@ export default function App() {
 
             </div>
 
+            {/* 右侧生活随笔与博客分类 (占 8 列) */}
+            <div className="lg:col-span-8 space-y-8">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-neutral-800/80 pb-5">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <span className="w-8 h-px bg-[#FF6B00]"></span>
+                    <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-[#FF6B00]">LIFE & CODING REFLECTION</span>
+                  </div>
+                  <h2 className="font-display text-2xl md:text-3xl font-black tracking-tighter uppercase text-white leading-none">
+                    吉大四季、美食与极客生活
+                  </h2>
+                </div>
+                
+                {/* 过滤器 */}
+                <div className="flex flex-wrap gap-1.5 text-[10px] font-mono">
+                  {['all', 'campus', 'life_style', 'tech'].map((tab) => (
+                    <button 
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={"px-3 py-1.5 rounded-full border transition-all cursor-pointer " + (activeTab === tab ? "bg-[#FF6B00] border-[#FF6B00] text-black font-bold" : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white")}
+                    >
+                      {tab === "all" && "全部记录"}
+                      {tab === "campus" && "🏫 校园"}
+                      {tab === "life_style" && "🍳 生活"}
+                      {tab === "tech" && "📝 思考"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Daylight 风格不规则高阶视觉相册网格 (在 8 列内适配为三栏) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                
+                {/* 卡片 1: 北区大雪 */}
+                {(activeTab === 'all' || activeTab === 'campus') && (
+                  <div className="bg-[#111115] border border-neutral-800 hover:border-[#FF6B00]/40 rounded-2xl overflow-hidden group transition-all duration-300 flex flex-col h-full">
+                    <div className="aspect-[16/10] overflow-hidden relative">
+                      <img src="https://images.unsplash.com/photo-1547989453-11e67ffb3885?auto=format&fit=crop&w=800&q=80" alt="长春大雪" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                      <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-mono text-neutral-300">CAMPUS</div>
+                    </div>
+                    <div className="p-4 space-y-2 flex-grow flex flex-col justify-between">
+                      <div className="space-y-1.5">
+                        <span className="text-[9px] font-mono text-[#FF6B00] block">长春 · 吉大北区雪景</span>
+                        <h4 className="font-display text-sm text-white font-bold tracking-tight uppercase group-hover:text-[#FF6B00] transition-colors line-clamp-1">吉大北区的四季与初雪</h4>
+                        <p className="text-[11px] text-neutral-400 leading-relaxed font-light line-clamp-4">银装素裹的前卫南区，和北风里呼出的白气。每次深夜写完高并发重构，从软院机房里走出来，世界都变得极为寂静...</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 卡片 2: 键盘咖啡极客桌面 */}
+                {(activeTab === 'all' || activeTab === 'life_style') && (
+                  <div className="bg-[#111115] border border-neutral-800 hover:border-[#FF6B00]/40 rounded-2xl overflow-hidden group transition-all duration-300 flex flex-col h-full">
+                    <div className="aspect-[16/10] overflow-hidden relative">
+                      <img src="https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&w=800&q=80" alt="桌面搭建" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                      <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-mono text-neutral-300">LIFE</div>
+                    </div>
+                    <div className="p-4 space-y-2 flex-grow flex flex-col justify-between">
+                      <div className="space-y-1.5">
+                        <span className="text-[9px] font-mono text-[#FF6B00] block">GEEK GEAR</span>
+                        <h4 className="font-display text-sm text-white font-bold tracking-tight uppercase group-hover:text-[#FF6B00] transition-colors line-clamp-1">深夜咖啡与机械键盘的节律</h4>
+                        <p className="text-[11px] text-neutral-400 leading-relaxed font-light line-clamp-4">精心搭建起来的 1700px 视宽多层副屏，和手里时刻准备着续期 Token 的 Redis 热窗。敲下每一行 Java 代码都充满纯粹秩序感。</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 卡片 3: 人机协同的思考 */}
+                {(activeTab === 'all' || activeTab === 'tech') && (
+                  <div className="bg-[#111115] border border-neutral-800 hover:border-[#FF6B00]/40 rounded-2xl overflow-hidden group transition-all duration-300 flex flex-col h-full">
+                    <div className="aspect-[16/10] overflow-hidden relative">
+                      <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80" alt="人工智能" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                      <div className="absolute top-3 left-3 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-mono text-neutral-300">REVOLUTION</div>
+                    </div>
+                    <div className="p-4 space-y-2 flex-grow flex flex-col justify-between">
+                      <div className="space-y-1.5">
+                        <span className="text-[9px] font-mono text-[#FF6B00] block">AI EXPLORATION</span>
+                        <h4 className="font-display text-sm text-white font-bold tracking-tight uppercase group-hover:text-[#FF6B00] transition-colors line-clamp-1">Vibe Coding 带来开发新范式吗？</h4>
+                        <p className="text-[11px] text-neutral-400 leading-relaxed font-light line-clamp-4">结合 Claude Code 交付需求，开发已经变为“设计与状态治理”的哲学。后端研发不仅要关注底层，还要关注大模型指令集。</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -908,98 +994,8 @@ export default function App() {
         </div>
       </section>
 
-      {/* ==================== 6. 生活随笔与博客分类 (LIFE SNAPS) ==================== */}
-      <section id="life" className="relative py-28 border-b border-neutral-900 bg-[#0A0A0C]">
-        
-        {/* 背景分割线 */}
-        <div className="absolute inset-0 pointer-events-none z-0 grid grid-cols-1 md:grid-cols-12 max-w-[1700px] mx-auto w-full">
-          <div className="col-span-3 border-r border-neutral-900/40 h-full"></div>
-          <div className="col-span-6 border-r border-neutral-900/40 h-full"></div>
-          <div className="col-span-3 h-full"></div>
-        </div>
+      
 
-        <div className="relative w-full max-w-[1700px] mx-auto px-6 md:px-12 z-20 space-y-16">
-          
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <span className="w-8 h-px bg-[#FF6B00]"></span>
-                <span className="text-xs uppercase tracking-[0.2em] font-mono text-[#FF6B00]">LIFE & CODING REFLECTION</span>
-              </div>
-              <h2 className="font-display text-4xl md:text-5xl font-black tracking-tighter uppercase text-white leading-none">
-                吉大四季、美食与极客生活
-              </h2>
-            </div>
-            
-            {/* 过滤器 */}
-            <div className="flex flex-wrap gap-2 text-xs font-mono">
-              {['all', 'campus', 'life_style', 'tech'].map((tab) => (
-                <button 
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-full border transition-all cursor-pointer ${activeTab === tab ? 'bg-[#FF6B00] border-[#FF6B00] text-black font-bold' : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white'}`}
-                >
-                  {tab === 'all' && "全部记录"}
-                  {tab === 'campus' && "🏫 吉大校园"}
-                  {tab === 'life_style' && "🍳 享吃点生活"}
-                  {tab === 'tech' && "📝 深度极客思考"}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Daylight 风格不规则高阶视觉相册网格 */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            
-            {/* 卡片 1: 北区大雪 */}
-            {(activeTab === 'all' || activeTab === 'campus') && (
-              <div className="md:col-span-4 bg-[#111115] border border-neutral-800 rounded-2xl overflow-hidden group hover:border-[#FF6B00]/40 transition-all duration-300">
-                <div className="aspect-[16/10] overflow-hidden relative">
-                  <img src="https://images.unsplash.com/photo-1547989453-11e67ffb3885?auto=format&fit=crop&w=800&q=80" alt="长春大雪" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                  <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded text-[9px] font-mono text-neutral-300">CAMPUS</div>
-                </div>
-                <div className="p-6 space-y-2">
-                  <span className="text-[10px] font-mono text-[#FF6B00]">长春 · 吉大北区雪景</span>
-                  <h4 className="font-display text-xl text-white font-bold tracking-tight uppercase group-hover:text-[#FF6B00] transition-colors">吉大北区的四季与初雪</h4>
-                  <p className="text-xs text-neutral-400 leading-relaxed font-light">银装素裹的前卫南区，和北风里呼出的白气。每次深夜写完高并发重构，从软院机房里走出来，世界都变得极为寂静...</p>
-                </div>
-              </div>
-            )}
-
-            {/* 卡片 2: 键盘咖啡极客桌面 */}
-            {(activeTab === 'all' || activeTab === 'life_style') && (
-              <div className="md:col-span-4 bg-[#111115] border border-neutral-800 rounded-2xl overflow-hidden group hover:border-[#FF6B00]/40 transition-all duration-300">
-                <div className="aspect-[16/10] overflow-hidden relative">
-                  <img src="https://images.unsplash.com/photo-1511467687858-23d96c32e4ae?auto=format&fit=crop&w=800&q=80" alt="桌面搭建" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                  <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded text-[9px] font-mono text-neutral-300">LIFE</div>
-                </div>
-                <div className="p-6 space-y-2">
-                  <span className="text-[10px] font-mono text-[#FF6B00]">GEEK GEAR</span>
-                  <h4 className="font-display text-xl text-white font-bold tracking-tight uppercase group-hover:text-[#FF6B00] transition-colors">深夜咖啡与机械键盘的节律</h4>
-                  <p className="text-xs text-neutral-400 leading-relaxed font-light">精心搭建起来的 1700px 视宽多层副屏，和手里时刻准备着续期 Token 的 Redis 热窗。敲下每一行 Java 代码都充满纯粹秩序感。</p>
-                </div>
-              </div>
-            )}
-
-            {/* 卡片 3: 人机协同的思考 */}
-            {(activeTab === 'all' || activeTab === 'tech') && (
-              <div className="md:col-span-4 bg-[#111115] border border-neutral-800 rounded-2xl overflow-hidden group hover:border-[#FF6B00]/40 transition-all duration-300">
-                <div className="aspect-[16/10] overflow-hidden relative">
-                  <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80" alt="人工智能" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                  <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded text-[9px] font-mono text-neutral-300">REVOLUTION</div>
-                </div>
-                <div className="p-6 space-y-2">
-                  <span className="text-[10px] font-mono text-[#FF6B00]">AI EXPLORATION</span>
-                  <h4 className="font-display text-xl text-white font-bold tracking-tight uppercase group-hover:text-[#FF6B00] transition-colors">Vibe Coding 带来开发新范式吗？</h4>
-                  <p className="text-xs text-neutral-400 leading-relaxed font-light">结合 Claude Code 交付需求，开发已经变为“设计与状态治理”的哲学。后端研发不仅要关注底层，还要关注大模型指令集。</p>
-                </div>
-              </div>
-            )}
-
-          </div>
-
-        </div>
-      </section>
 
       {/* ==================== 7. 全屏谢幕联系方式 (FOOTER) ==================== */}
       <section id="footer" className="relative min-h-screen bg-[#0A0A0C] border-t border-neutral-900 flex flex-col justify-between py-20 px-6 md:px-12 overflow-hidden">
