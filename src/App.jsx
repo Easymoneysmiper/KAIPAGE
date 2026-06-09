@@ -11,6 +11,7 @@ import Lanyard from './Lanyard';
 import CircularGallery from './CircularGallery';
 import GlassIcons from './GlassIcons';
 import ShinyText from './ShinyText';
+import Shuffle from './Shuffle';
 
 // ==================== Canvas Texture Helpers for 3D Lanyard Card ====================
 const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
@@ -888,8 +889,22 @@ export default function App() {
               <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-neutral-800/80 pb-5">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <span className="w-8 h-px bg-[#FF6B00]"></span>
-                    <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-[#FF6B00]">LIFE & CODING REFLECTION</span>
+                    <Shuffle
+                      text="LIFE & CODING REFLECTION"
+                      className="uppercase tracking-[0.2em] text-[#FF6B00]"
+                      style={{ fontSize: '12.5px', fontFamily: "'Press Start 2P', sans-serif" }}
+                      shuffleDirection="right"
+                      duration={0.75}
+                      animationMode="evenodd"
+                      shuffleTimes={1}
+                      ease="power2.out"
+                      stagger={0.03}
+                      loop={true}
+                      loopDelay={2}
+                      triggerOnHover={true}
+                      tag="span"
+                      textAlign="left"
+                    />
                   </div>
                   <h2 className="font-display text-2xl md:text-3xl font-black tracking-tighter uppercase text-white leading-none">
                     <ShinyText
