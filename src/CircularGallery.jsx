@@ -1,5 +1,6 @@
 import { Camera, Mesh, Plane, Program, Renderer, Texture, Transform } from 'ogl';
 import { useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
 
 import './CircularGallery.css';
 
@@ -579,28 +580,54 @@ export default function CircularGallery({
       return;
     }
 
-    prevItemsRef.current = items;
-    let app;
     let isMounted = true;
+    let app;
+
+    const initApp = () => {
+      resolveFont(font, fontUrl).then(resolvedFont => {
+        if (!isMounted || !containerRef.current) return;
+        app = new App(containerRef.current, {
+          items,
+          bend,
+          textColor,
+          borderRadius,
+          font: resolvedFont,
+          scrollSpeed,
+          scrollEase
+        });
+        appRef.current = app;
+
+        // Slide in the new gallery from the right
+        gsap.set(containerRef.current, { x: 150, opacity: 0 });
+        gsap.to(containerRef.current, {
+          x: 0,
+          opacity: 1,
+          duration: 0.8,
+          ease: 'power3.out'
+        });
+      });
+    };
 
     if (appRef.current) {
-      appRef.current.destroy();
-      appRef.current = null;
-    }
-
-    resolveFont(font, fontUrl).then(resolvedFont => {
-      if (!isMounted || !containerRef.current) return;
-      app = new App(containerRef.current, {
-        items,
-        bend,
-        textColor,
-        borderRadius,
-        font: resolvedFont,
-        scrollSpeed,
-        scrollEase
+      // Animate the old gallery out to the left
+      gsap.to(containerRef.current, {
+        x: -150,
+        opacity: 0,
+        duration: 0.35,
+        ease: 'power2.in',
+        onComplete: () => {
+          if (appRef.current) {
+            appRef.current.destroy();
+            appRef.current = null;
+          }
+          prevItemsRef.current = items;
+          initApp();
+        }
       });
-      appRef.current = app;
-    });
+    } else {
+      prevItemsRef.current = items;
+      initApp();
+    }
 
     return () => {
       isMounted = false;
