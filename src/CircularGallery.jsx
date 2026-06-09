@@ -562,7 +562,8 @@ export default function CircularGallery({
 }) {
   const containerRef = useRef(null);
   const appRef = useRef(null);
-  const prevItemsRef = useRef(null);
+  const prevItemsRef = useRef(items);
+  const isFirstMount = useRef(true);
 
   const checkItemsEqual = (a, b) => {
     if (!a || !b) return a === b;
@@ -573,61 +574,24 @@ export default function CircularGallery({
     return true;
   };
 
+  // 1. Mount / Unmount lifecycle
   useEffect(() => {
-    if (!containerRef.current) return;
-
-    if (appRef.current && checkItemsEqual(items, prevItemsRef.current)) {
-      return;
-    }
-
     let isMounted = true;
     let app;
 
-    const initApp = () => {
-      resolveFont(font, fontUrl).then(resolvedFont => {
-        if (!isMounted || !containerRef.current) return;
-        app = new App(containerRef.current, {
-          items,
-          bend,
-          textColor,
-          borderRadius,
-          font: resolvedFont,
-          scrollSpeed,
-          scrollEase
-        });
-        appRef.current = app;
-
-        // Slide in the new gallery from the right
-        gsap.set(containerRef.current, { x: 200, opacity: 0 });
-        gsap.to(containerRef.current, {
-          x: 0,
-          opacity: 1,
-          duration: 1.5,
-          ease: 'power4.out'
-        });
+    resolveFont(font, fontUrl).then(resolvedFont => {
+      if (!isMounted || !containerRef.current) return;
+      app = new App(containerRef.current, {
+        items,
+        bend,
+        textColor,
+        borderRadius,
+        font: resolvedFont,
+        scrollSpeed,
+        scrollEase
       });
-    };
-
-    if (appRef.current) {
-      // Animate the old gallery out to the left
-      gsap.to(containerRef.current, {
-        x: -200,
-        opacity: 0,
-        duration: 0.6,
-        ease: 'power3.inOut',
-        onComplete: () => {
-          if (appRef.current) {
-            appRef.current.destroy();
-            appRef.current = null;
-          }
-          prevItemsRef.current = items;
-          initApp();
-        }
-      });
-    } else {
-      prevItemsRef.current = items;
-      initApp();
-    }
+      appRef.current = app;
+    });
 
     return () => {
       isMounted = false;
@@ -638,7 +602,60 @@ export default function CircularGallery({
         }
       }
     };
-  }, [items, bend, textColor, borderRadius, font, fontUrl, scrollSpeed, scrollEase]);
+  }, [bend, textColor, borderRadius, font, fontUrl, scrollSpeed, scrollEase]);
+
+  // 2. Watch for items changes (filter changes)
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+
+    if (checkItemsEqual(items, prevItemsRef.current)) {
+      return;
+    }
+
+    gsap.killTweensOf(containerRef.current);
+
+    // Animate the old gallery out to the left
+    gsap.to(containerRef.current, {
+      x: -200,
+      opacity: 0,
+      duration: 0.6,
+      ease: 'power3.inOut',
+      onComplete: () => {
+        if (appRef.current) {
+          appRef.current.destroy();
+          appRef.current = null;
+        }
+
+        resolveFont(font, fontUrl).then(resolvedFont => {
+          if (!containerRef.current) return;
+          const app = new App(containerRef.current, {
+            items,
+            bend,
+            textColor,
+            borderRadius,
+            font: resolvedFont,
+            scrollSpeed,
+            scrollEase
+          });
+          appRef.current = app;
+
+          // Slide in the new gallery from the right
+          gsap.set(containerRef.current, { x: 200, opacity: 0 });
+          gsap.to(containerRef.current, {
+            x: 0,
+            opacity: 1,
+            duration: 1.5,
+            ease: 'power4.out'
+          });
+        });
+      }
+    });
+
+    prevItemsRef.current = items;
+  }, [items]);
 
   return <div className="circular-gallery" ref={containerRef} />;
 }
