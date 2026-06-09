@@ -10,6 +10,7 @@ import TextType from './TextType';
 import Lanyard from './Lanyard';
 import CircularGallery from './CircularGallery';
 import GlassIcons from './GlassIcons';
+import ShinyText from './ShinyText';
 
 // ==================== Canvas Texture Helpers for 3D Lanyard Card ====================
 const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
@@ -891,7 +892,17 @@ export default function App() {
                     <span className="text-[10px] uppercase tracking-[0.2em] font-mono text-[#FF6B00]">LIFE & CODING REFLECTION</span>
                   </div>
                   <h2 className="font-display text-2xl md:text-3xl font-black tracking-tighter uppercase text-white leading-none">
-                    极客生活与深度思考
+                    <ShinyText
+                      text="✨ 极客生活与深度思考"
+                      speed={2}
+                      delay={0.5}
+                      color="#a59e9a"
+                      shineColor="#ffffff"
+                      spread={115}
+                      direction="left"
+                      yoyo={false}
+                      pauseOnHover={false}
+                    />
                   </h2>
                 </div>
                 
