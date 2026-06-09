@@ -598,12 +598,12 @@ export default function CircularGallery({
         appRef.current = app;
 
         // Slide in the new gallery from the right
-        gsap.set(containerRef.current, { x: 150, opacity: 0 });
+        gsap.set(containerRef.current, { x: 200, opacity: 0 });
         gsap.to(containerRef.current, {
           x: 0,
           opacity: 1,
-          duration: 0.8,
-          ease: 'power3.out'
+          duration: 1.5,
+          ease: 'power4.out'
         });
       });
     };
@@ -611,10 +611,10 @@ export default function CircularGallery({
     if (appRef.current) {
       // Animate the old gallery out to the left
       gsap.to(containerRef.current, {
-        x: -150,
+        x: -200,
         opacity: 0,
-        duration: 0.35,
-        ease: 'power2.in',
+        duration: 0.6,
+        ease: 'power3.inOut',
         onComplete: () => {
           if (appRef.current) {
             appRef.current.destroy();
