@@ -4,269 +4,20 @@ import ElectricBorder from './ElectricBorder';
 import SplitText from './SplitText';
 import RotatingText from './RotatingText';
 import ProfileCard from './ProfileCard';
-import MagicBento from './MagicBento';
-import ScrollFloat from './ScrollFloat';
 import TextType from './TextType';
-import Lanyard from './Lanyard';
 import CircularGallery from './CircularGallery';
 import GlassIcons from './GlassIcons';
 import ShinyText from './ShinyText';
 import Shuffle from './Shuffle';
+import ServerHangarCanvas from './ServerHangarCanvas';
+import Lenis from 'lenis';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useGSAP } from '@gsap/react';
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-// ==================== Canvas Texture Helpers for 3D Lanyard Card ====================
-const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
-  const words = text.split('');
-  let line = '';
-  for (let n = 0; n < words.length; n++) {
-    let testLine = line + words[n];
-    let metrics = ctx.measureText(testLine);
-    let testWidth = metrics.width;
-    if (testWidth > maxWidth && n > 0) {
-      ctx.fillText(line, x, y);
-      line = words[n];
-      y += lineHeight;
-    } else {
-      line = testLine;
-    }
-  }
-  ctx.fillText(line, x, y);
-};
-
-const roundRect = (ctx, x, y, width, height, radius, fill, stroke) => {
-  if (typeof radius === 'number') {
-    radius = { tl: radius, tr: radius, br: radius, bl: radius };
-  } else {
-    radius = { tl: 0, tr: 0, br: 0, bl: 0, ...radius };
-  }
-  ctx.beginPath();
-  ctx.moveTo(x + radius.tl, y);
-  ctx.lineTo(x + width - radius.tr, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
-  ctx.lineTo(x + width, y + height - radius.br);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
-  ctx.lineTo(x + radius.bl, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
-  ctx.lineTo(x, y + radius.tl);
-  ctx.quadraticCurveTo(x, y, x + radius.tl, y);
-  ctx.closePath();
-  if (fill) ctx.fill();
-  if (stroke) ctx.stroke();
-};
-
-const drawPill = (ctx, text, x, y, bg, borderCol) => {
-  ctx.font = 'bold 24px "Plus Jakarta Sans", "Outfit", sans-serif';
-  const metrics = ctx.measureText(text);
-  const w = metrics.width + 40;
-  const h = 50;
-  ctx.fillStyle = bg;
-  ctx.strokeStyle = borderCol;
-  ctx.lineWidth = 1.5;
-  roundRect(ctx, x, y, w, h, h / 2, true, true);
-  ctx.fillStyle = borderCol;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(text, x + w / 2, y + h / 2);
-  ctx.textBaseline = 'alphabetic'; // restore
-};
-
-const generateFrontTexture = () => {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 1536;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
-
-  // Background gradient
-  const grad = ctx.createLinearGradient(0, 0, 0, 1536);
-  grad.addColorStop(0, '#0F0F12');
-  grad.addColorStop(1, '#050507');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 1024, 1536);
-
-  // Technological grid lines
-  ctx.strokeStyle = 'rgba(255, 107, 0, 0.04)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 1024; i += 64) {
-    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 1536); ctx.stroke();
-  }
-  for (let i = 0; i < 1536; i += 64) {
-    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(1024, i); ctx.stroke();
-  }
-
-  // Sleek white border around the card
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-  ctx.lineWidth = 20;
-  ctx.strokeRect(10, 10, 1004, 1516);
-  
-  // Thin inner orange line
-  ctx.strokeStyle = 'rgba(255, 107, 0, 0.5)';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(30, 30, 964, 1476);
-
-  // Sleek header
-  ctx.font = 'bold 36px "Plus Jakarta Sans", "Outfit", sans-serif';
-  ctx.fillStyle = '#FF6B00';
-  ctx.textAlign = 'center';
-  ctx.fillText('——  BIO & EDUCATION  ——', 512, 130);
-
-  // Slogan (Title from Figure 2)
-  ctx.font = 'bold 52px "Plus Jakarta Sans", "Outfit", sans-serif';
-  ctx.fillStyle = '#FFFFFF';
-  ctx.textAlign = 'center';
-  ctx.fillText('专注于技术厚度与', 512, 250);
-  ctx.fillText('极致的高吞吐服务设计', 512, 330);
-
-  // Description
-  ctx.font = '30px "Plus Jakarta Sans", sans-serif';
-  ctx.fillStyle = '#A0A0AB';
-  ctx.textAlign = 'left';
-  
-  const descText = '目前就读于吉林大学（985、211、双一流）软件学院软件工程专业。在校期间深度钻研并发底层理论与大型高并发高一致性系统的架构，注重系统底层优化。提倡 AI 辅助开发 (Vibe Coding)，通过熟练运用 Claude code 等 AI 工具配合深厚的代码素养大幅提高功能研发的交付质量与效率。';
-  wrapText(ctx, descText, 80, 440, 864, 52);
-
-  // JLU Background watermark
-  ctx.save();
-  ctx.globalAlpha = 0.08;
-  ctx.font = 'bold 300px "Outfit", sans-serif';
-  ctx.fillStyle = '#FFFFFF';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('JLU', 512, 850);
-  ctx.restore();
-
-  // Bottom Divider
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(80, 1150);
-  ctx.lineTo(944, 1150);
-  ctx.stroke();
-
-  // JLU Badge
-  ctx.fillStyle = '#FF6B00';
-  ctx.beginPath();
-  ctx.arc(140, 1240, 40, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 30px "Outfit", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('J', 140, 1240);
-
-  // Text details next to JLU logo
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'alphabetic';
-  ctx.fillStyle = '#FFFFFF';
-  ctx.font = 'bold 36px "Plus Jakarta Sans", sans-serif';
-  ctx.fillText('吉林大学 · 软件工程本科', 210, 1225);
-  ctx.fillStyle = '#71717A';
-  ctx.font = '26px "Plus Jakarta Sans", sans-serif';
-  ctx.fillText('软件学院 | 卓越工程师体系培养班 2023.09 - 2027.06', 210, 1270);
-
-  // Pills: 985/211 and 软件工程专业 at the bottom
-  drawPill(ctx, '985 / 211', 80, 1340, 'rgba(255, 255, 255, 0.05)', '#A0A0AB');
-  drawPill(ctx, '软件工程专业', 280, 1340, 'rgba(255, 107, 0, 0.1)', '#FF6B00');
-
-  return canvas.toDataURL('image/png');
-};
-
-const generateBackTexture = () => {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 1536;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
-
-  // Background gradient
-  const grad = ctx.createLinearGradient(0, 0, 0, 1536);
-  grad.addColorStop(0, '#0F0F12');
-  grad.addColorStop(1, '#050507');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 1024, 1536);
-
-  // Grid
-  ctx.strokeStyle = 'rgba(255, 107, 0, 0.04)';
-  ctx.lineWidth = 1;
-  for (let i = 0; i < 1024; i += 64) {
-    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 1536); ctx.stroke();
-  }
-  for (let i = 0; i < 1536; i += 64) {
-    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(1024, i); ctx.stroke();
-  }
-
-  // Sleek white border
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
-  ctx.lineWidth = 20;
-  ctx.strokeRect(10, 10, 1004, 1516);
-  
-  ctx.strokeStyle = 'rgba(255, 107, 0, 0.5)';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(30, 30, 964, 1476);
-
-  // Sleek header
-  ctx.font = 'bold 36px "Plus Jakarta Sans", "Outfit", sans-serif';
-  ctx.fillStyle = '#FF6B00';
-  ctx.textAlign = 'center';
-  ctx.fillText('——  TECHNICAL METRICS  ——', 512, 130);
-
-  // Metrics
-  const cards = [
-    {
-      title: '缓存穿透/击穿/雪崩',
-      value: '100% 拦截解决率',
-      desc: 'Cache Aside 模式，热点锁及空值机制'
-    },
-    {
-      title: '智能体最大决策安全',
-      value: '10 步上限控制',
-      desc: 'ReAct Loop 死循环实时检测防御'
-    },
-    {
-      title: '高并发秒杀并发吞吐',
-      value: 'X 10 倍效率提升',
-      desc: 'Lua脚本原子操作 + Kafka 异步削峰下单'
-    }
-  ];
-
-  let startY = 220;
-  cards.forEach((card, index) => {
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
-    ctx.lineWidth = 2;
-    roundRect(ctx, 80, startY, 864, 320, 16, true, true);
-
-    ctx.fillStyle = '#FF6B00';
-    roundRect(ctx, 80, startY, 12, 320, { tl: 16, bl: 16, tr: 0, br: 0 }, true, false);
-
-    ctx.fillStyle = '#71717A';
-    ctx.font = 'bold 30px "Plus Jakarta Sans", sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(card.title, 130, startY + 70);
-
-    ctx.fillStyle = '#FF6B00';
-    ctx.font = 'bold 64px "Outfit", sans-serif';
-    ctx.fillText(card.value, 130, startY + 170);
-
-    ctx.fillStyle = '#A0A0AB';
-    ctx.font = '26px "Plus Jakarta Sans", sans-serif';
-    ctx.fillText(card.desc, 130, startY + 250);
-
-    startY += 360;
-  });
-
-  // Bottom watermark
-  ctx.font = 'bold 24px "Outfit", sans-serif';
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-  ctx.textAlign = 'center';
-  ctx.fillText('PENGKAI.DEV | PING ME', 512, 1400);
-
-  return canvas.toDataURL('image/png');
-};
+// ==================== Lanyard Card texture helpers removed ====================
 
 
 // ==================== 极简高质感 SVG 图标组件 ====================
@@ -294,11 +45,7 @@ const SparklesIcon = () => (
   </svg>
 );
 
-const TerminalIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-  </svg>
-);
+
 
 const navItems = [
   { label: "01 HOME", href: "#hero" },
@@ -352,33 +99,15 @@ const filterIcons = [
 ];
 
 export default function App() {
-  // 1. 滚动进度 state
-  const [scrollProgress, setScrollProgress] = useState(0);
+  // 1. 滚动进度 (使用 ref + 直接 DOM 操作避免 re-render)
+  const scrollProgressRef = useRef(0);
+  const scrollBarRef = useRef(null);
+  const [isHangarReady, setIsHangarReady] = useState(false);
   const [activeNavIndex, setActiveNavIndex] = useState(0);
   const isScrollingToSection = useRef(false);
   const scrollTimeoutRef = useRef(null);
   const [activeTab, setActiveTab] = useState('all');
 
-  // 2. 交互智能体（Travel Agent）模拟器核心 State
-  const [agentState, setAgentState] = useState('idle'); // idle -> user_input -> rag_search -> tool_calling -> mcp_mats -> output
-  const [agentLogs, setAgentLogs] = useState([]);
-  const [userQuery, setUserQuery] = useState('');
-
-  // 3. 享吃点高并发秒杀模拟器 State
-  const [secStock, setSecStock] = useState(10);
-  const [qpsValue, setQpsValue] = useState(0);
-  const [secStatus, setSecStatus] = useState('waiting'); // waiting -> processing -> empty
-  const [secLogs, setSecLogs] = useState([]);
-
-  // 4. VibeCoding 自研重构助手 State
-  const [vibeCodeStage, setVibeCodeStage] = useState('idle');
-  const [vibeOutput, setVibeOutput] = useState('');
-
-  // 5. Lanyard 悬挂卡片 3D State
-  const [textures, setTextures] = useState({ front: null, back: null });
-  const [isLanyardOpen, setIsLanyardOpen] = useState(false);
-  const [hasOpenedOnce, setHasOpenedOnce] = useState(false);
-  const lanyardRef = useRef(null);
   const experienceRef = useRef(null);
 
   useGSAP(() => {
@@ -474,37 +203,63 @@ export default function App() {
   }, [activeTab]);
 
   useEffect(() => {
-    if (!isLanyardOpen) return;
-    const handleOutsideClick = (e) => {
-      if (lanyardRef.current && !lanyardRef.current.contains(e.target)) {
-        setIsLanyardOpen(false);
+    setIsHangarReady(true);
+  }, []);
+
+  // Initialize Lenis Smooth Scrolling and link to GSAP ScrollTrigger
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.1, // Silky smooth scroll duration
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Exponent ease out
+      smoothWheel: true,
+      syncTouch: false,
+    });
+
+    lenis.on('scroll', ScrollTrigger.update);
+
+    gsap.ticker.add((time) => {
+      lenis.raf(time * 1000);
+    });
+
+    gsap.ticker.lagSmoothing(0);
+
+    // Smooth scroll for anchor hash links (nav items)
+    const handleAnchorClick = (e) => {
+      const targetLink = e.target.closest('a[href^="#"]');
+      if (targetLink) {
+        e.preventDefault();
+        const id = targetLink.getAttribute('href');
+        const targetElement = document.querySelector(id);
+        if (targetElement) {
+          lenis.scrollTo(targetElement, { offset: 0, duration: 1.2 });
+        }
       }
     };
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, [isLanyardOpen]);
 
-  useEffect(() => {
-    if (isLanyardOpen) {
-      setHasOpenedOnce(true);
-    }
-  }, [isLanyardOpen]);
+    document.addEventListener('click', handleAnchorClick);
 
-  useEffect(() => {
-    const front = generateFrontTexture();
-    const back = generateBackTexture();
-    setTextures({ front, back });
+    return () => {
+      lenis.destroy();
+      gsap.ticker.remove(lenis.raf);
+      document.removeEventListener('click', handleAnchorClick);
+    };
   }, []);
 
   // Canvas 背景引用
   const canvasRef = useRef(null);
 
-  // 监听全局滚动
+  // 监听全局滚动 (使用直接 DOM 操作更新滚动条，避免 re-render)
   useEffect(() => {
+    let lastNavIndex = 0;
     const handleScroll = () => {
       const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
       if (totalScroll > 0) {
-        setScrollProgress((window.pageYOffset / totalScroll) * 100);
+        const progress = (window.pageYOffset / totalScroll) * 100;
+        scrollProgressRef.current = progress;
+        // 直接操作 DOM 更新滚动条宽度，不触发 React re-render
+        if (scrollBarRef.current) {
+          scrollBarRef.current.style.width = `${progress}%`;
+        }
       }
 
       // 避免由于点击导航触发平滑滚动而导致高亮块在中间选项和目标选项之间抖动
@@ -523,10 +278,14 @@ export default function App() {
           }
         }
       }
-      setActiveNavIndex(currentActive);
+      // 仅在导航索引变化时才触发 setState
+      if (currentActive !== lastNavIndex) {
+        lastNavIndex = currentActive;
+        setActiveNavIndex(currentActive);
+      }
     };
     
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll(); // 首次加载同步当前所在区间
     
     return () => {
@@ -535,12 +294,13 @@ export default function App() {
     };
   }, []);
 
-  // 交互式 Canvas背景网络粒子
+  // 交互式 Canvas背景网络粒子 (带 IntersectionObserver 暂停机制)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     let animationFrameId;
+    let isVisible = true; // IntersectionObserver 控制
 
     let width = (canvas.width = canvas.offsetWidth);
     let height = (canvas.height = canvas.offsetHeight);
@@ -575,6 +335,12 @@ export default function App() {
     canvas.addEventListener('mouseleave', handleMouseLeave);
 
     const draw = () => {
+      // 不可见时跳过绘制，节省 CPU/GPU
+      if (!isVisible) {
+        animationFrameId = requestAnimationFrame(draw);
+        return;
+      }
+
       ctx.clearRect(0, 0, width, height);
       ctx.fillStyle = 'rgba(255, 107, 0, 0.05)';
       
@@ -625,6 +391,17 @@ export default function App() {
 
     draw();
 
+    // IntersectionObserver: hero 区域不可见时暂停粒子绘制
+    const heroSection = canvas.closest('section');
+    let observer;
+    if (heroSection) {
+      observer = new IntersectionObserver(
+        ([entry]) => { isVisible = entry.isIntersecting; },
+        { threshold: 0 }
+      );
+      observer.observe(heroSection);
+    }
+
     const handleResize = () => {
       width = canvas.width = canvas.offsetWidth;
       height = canvas.height = canvas.offsetHeight;
@@ -636,140 +413,11 @@ export default function App() {
       canvas.removeEventListener('mousemove', handleMouseMove);
       canvas.removeEventListener('mouseleave', handleMouseLeave);
       window.removeEventListener('resize', handleResize);
+      if (observer) observer.disconnect();
     };
   }, []);
 
-  // ------------------ 智能旅行助手模拟流 ------------------
-  const runAgentSimulation = (query) => {
-    if (!query.trim()) {
-      alert("请输入你想去的旅行地点或偏好（如：吉林长春市三天冰雪之旅）");
-      return;
-    }
-    setUserQuery(query);
-    setAgentState('user_input');
-    setAgentLogs([]);
 
-    const pushLog = (text, delay) => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          setAgentLogs((prev) => [...prev, `[${new Date().toLocaleTimeString()}] ${text}`]);
-          resolve();
-        }, delay);
-      });
-    };
-
-    pushLog(`收到用户规划指令: "${query}"`, 0)
-      .then(() => {
-        setAgentState('rag_search');
-        return pushLog("RAG重写: 触发 Multi-Query 原信息增强，生成 3 组子检索句。正在遍历向量数据库中长春、吉大周边及净月潭景区文档切片...", 1200);
-      })
-      .then(() => {
-        return pushLog("文档切片相关度召回: 匹配到 4 篇精确文档 (召回度：94.5%)。提取元数据 (冰雪节优惠、推荐线路)...", 1000);
-      })
-      .then(() => {
-        setAgentState('tool_calling');
-        return pushLog("触发 Tool Calling: Spring AI Function Calling 成功注入。发起高德实时交通拥慢与实时天气 API 调度...", 1000);
-      })
-      .then(() => {
-        return pushLog("API 实时回调返回: 长春市当前气温 -12°C，今日推荐以室内冰雪活动和伪满皇宫为主，交通顺畅...", 900);
-      })
-      .then(() => {
-        setAgentState('mcp_mats');
-        return pushLog("深度连接 MCP 协议服务端: 采用 SSE 双传输模式。成功集成高德地图精准推荐 MCP 以及多模态图片检索 MCP 节点...", 1100);
-      })
-      .then(() => {
-        return pushLog("检测 ReAct 自主智能体状态: 最大执行步数限制为 10 步。当前第 3 步，死循环检测器状态绿色正常...", 800);
-      })
-      .then(() => {
-        setAgentState('output');
-        return pushLog("智能规划完成。成功输出 PDF 旅行指南格式及多模态卡片信息：[1. 南湖公园雪雕-2. 吉大前卫南区极光大剧院-3. 享吃点美食汇]", 1000);
-      });
-  };
-
-  // ------------------ 享吃点秒杀模拟流 ------------------
-  const triggerSecKill = () => {
-    if (secStock <= 0) {
-      alert("抢购商品已被一抢而空，请刷新或稍后再试");
-      return;
-    }
-    setSecStatus('processing');
-    setQpsValue(4500 + Math.floor(Math.random() * 800));
-    setSecLogs([]);
-
-    const logList = [
-      "⚡ 瞬时并发流量接入，QPS 直线上飙至 5,200+！开启集群弹性伸缩机制",
-      "🔑 第一层安全防护: Redis 分布式集群拦截。验证 Session 与 Token 自动续期",
-      "📦 第二层熔断防线: Redis Lua 脚本进行原子化资格预检与扣减库存",
-      "🛡️ 第三层严谨拦截: 运用 Redisson 分布式锁严密校验『一人一单』，抵挡同一用户重放攻击",
-      "🎯 资格预检成功！库存减少 -1。正在压入 Kafka 核心下单主题(topic-share-eat-order)",
-      "📨 Kafka 消费者启动：主线程异步脱离落库耗时任务，接口吞吐量实现无阻流输出",
-      "💾 异步线程异步落库 MySQL，触发 CAS 乐观锁扣减库存。数据最终一致性建立！"
-    ];
-
-    let step = 0;
-    const interval = setInterval(() => {
-      if (step < logList.length) {
-        setSecLogs((prev) => [...prev, logList[step]]);
-        step++;
-      } else {
-        clearInterval(interval);
-        setSecStock((prev) => Math.max(0, prev - 1));
-        setQpsValue(0);
-        setSecStatus(secStock - 1 <= 0 ? 'empty' : 'waiting');
-      }
-    }, 650);
-  };
-
-  // ------------------ Vibe Coding 智能重构流 ------------------
-  const triggerVibeCode = (templateType) => {
-    setVibeCodeStage('running');
-    setVibeOutput('');
-    
-    let content = "";
-    let fullText = "";
-
-    if (templateType === 'rag') {
-      fullText = `// Vibe Coding: 协同 Claude Code 生成高阶向量检索逻辑\n` +
-                 `@Service\n` +
-                 `public class HighPrecisionRAGService {\n` +
-                 `    @Autowired private VectorStore vectorStore;\n` +
-                 `    public List<Document> queryWithMetadata(String queryText) {\n` +
-                 `        return vectorStore.similaritySearch(\n` +
-                 `            SearchRequest.query(queryText)\n` +
-                 `                .withTopK(5)\n` +
-                 `                .withSimilarityThreshold(0.85)\n` +
-                 `                .withFilterExpression("class == 'SoftwareEng'")\n` +
-                 `        );\n` +
-                 `    }\n` +
-                 `}`;
-    } else {
-      fullText = `// Vibe Coding: 高并发 Redis分布式锁原子预减扣减方案\n` +
-                 `@Transactional\n` +
-                 `public boolean secKillOrder(String userId, Long orderId) {\n` +
-                 `    String lockKey = "lock:order:" + userId;\n` +
-                 `    RLock lock = redissonClient.getLock(lockKey);\n` +
-                 `    if (lock.tryLock(3, 10, TimeUnit.SECONDS)) {\n` +
-                 `        try {\n` +
-                 `            kafkaTemplate.send("order_topic", new OrderEvent(userId, orderId));\n` +
-                 `            return true;\n` +
-                 `        } finally { lock.unlock(); }\n` +
-                 `    }\n` +
-                 `    return false;\n` +
-                 `}`;
-    }
-
-    let index = 0;
-    const timer = setInterval(() => {
-      if (index < fullText.length) {
-        content += fullText[index];
-        setVibeOutput(content);
-        index += 3; // 加快模拟打印速度
-      } else {
-        clearInterval(timer);
-        setVibeCodeStage('done');
-      }
-    }, 15);
-  };
 
   return (
     <div className="min-h-screen bg-[#0A0A0C] text-white selection:bg-[#FF6B00] selection:text-white relative font-sans overflow-x-hidden">
@@ -778,14 +426,15 @@ export default function App() {
       {/* 顶部滚动条 */}
       <div className="fixed top-0 left-0 right-0 h-1 bg-neutral-900 z-[70]">
         <div 
+          ref={scrollBarRef}
           className="h-full bg-gradient-to-r from-[#FF6B00] to-amber-500 transition-all duration-100" 
-          style={{ width: `${scrollProgress}%` }}
+          style={{ width: '0%' }}
         />
       </div>
 
       {/* ==================== 1. 极简网格导航栏 ==================== */}
       <div className="fixed top-6 left-0 right-0 z-[9999] flex justify-center px-4 md:px-12">
-        <div className="relative w-full max-w-[1700px]" ref={lanyardRef}>
+        <div className="relative w-full max-w-[1700px]">
           <nav className="relative z-20 bg-white/[0.04] backdrop-blur-2xl border border-white/10 rounded-2xl px-6 py-2.5 flex items-center justify-between w-full shadow-2xl">
             <div className="flex items-center gap-3">
               {/* 极简网格呼吸标志 */}
@@ -816,55 +465,15 @@ export default function App() {
                 colors={[1, 2, 3, 1, 2, 3, 1, 4]}
               />
             </div>
-
-            <button 
-              onClick={(e) => {
-                e.preventDefault();
-                setIsLanyardOpen(prev => !prev);
-              }}
-              className="bg-white hover:bg-neutral-200 text-black text-[11px] font-mono font-bold uppercase px-5 py-2.5 rounded-lg transition-all duration-300 shadow-md cursor-pointer block"
-            >
-              PING ME
-            </button>
           </nav>
-
-          {/* Lanyard Box (z-10 absolute, behind nav bar but overlaps in top coordinate, w-2000px centered relative to button) */}
-          <div 
-            className={`absolute right-[56px] translate-x-1/2 top-0 w-[2000px] h-[750px] z-10 overflow-hidden transition-all duration-700 cubic-bezier(0.34, 1.56, 0.64, 1) origin-top ${
-              isLanyardOpen 
-                ? 'opacity-100 translate-y-0 pointer-events-auto' 
-                : 'opacity-0 -translate-y-[250px] pointer-events-none'
-            }`}
-          >
-            {textures.front && textures.back && isLanyardOpen && (
-              <Lanyard 
-                position={[0, 0, 18]} 
-                gravity={[0, -40, 0]} 
-                frontImage={textures.front} 
-                backImage={textures.back} 
-                lanyardWidth={0.41}
-                onClose={() => setIsLanyardOpen(false)}
-              />
-            )}
-          </div>
         </div>
       </div>
 
       {/* ==================== 2. 全屏首页 HERO 区域 ==================== */}
       <section id="hero" className="relative h-screen flex flex-col justify-start pt-40 md:pt-52 overflow-hidden pb-24 md:pb-32 px-6 md:px-12 border-b border-neutral-900">
         
-        {/* 【在线静态无缝播放视频 - z-10】
-          - 这里为了在右侧预览窗口顺利展示，使用的是公共 CDN 视频。
-          - ⚠️ 部署到本地时：请将 src 替换为 src="./2月17日_1_.webm" 或 import 导入。
-        */}
-        <video
-          src="/background.mp4"
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover z-10 opacity-65 pointer-events-none"
-        />
+        {/* 3D 服务器机房背景，带开灯与拉近动效 */}
+        <ServerHangarCanvas isReady={isHangarReady} />
 
         {/* 【科技网格背景线 - z-20】
           置于视频正上方，创造网格浮动在壮丽雪山上的极致科幻图纸视觉效果
@@ -878,7 +487,7 @@ export default function App() {
         {/* 【双重渐变调色遮罩 - z-25】
           让背景视频和网格保持恰当的克制亮度，确保文字呈现最高级、最锋利的阅读对比度
         */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0C] via-[#0A0A0C]/30 to-black/20 pointer-events-none z-25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0C]/75 via-[#0A0A0C]/15 to-transparent pointer-events-none z-25" />
 
         {/* 【互动 Canvas 粒子 - z-30】
           浮动于调色遮罩前方，跟随鼠标交互飞舞

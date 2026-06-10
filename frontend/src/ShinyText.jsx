@@ -20,6 +20,7 @@ const ShinyText = ({
   const elapsedRef = useRef(0);
   const lastTimeRef = useRef(null);
   const directionRef = useRef(direction === 'left' ? 1 : -1);
+  const containerRef = useRef(null);
 
   const animationDuration = speed * 1000;
   const delayDuration = delay * 1000;
@@ -76,6 +77,21 @@ const ShinyText = ({
     progress.set(0);
   }, [direction]);
 
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          setIsPaused(!entry.isIntersecting);
+        });
+      },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const backgroundPosition = useTransform(progress, p => `${150 - p * 2}% center`);
 
   const handleMouseEnter = useCallback(() => {
@@ -96,6 +112,7 @@ const ShinyText = ({
 
   return (
     <motion.span
+      ref={containerRef}
       className={`shiny-text ${className}`}
       style={{ ...gradientStyle, backgroundPosition }}
       onMouseEnter={handleMouseEnter}

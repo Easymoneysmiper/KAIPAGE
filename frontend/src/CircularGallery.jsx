@@ -388,6 +388,7 @@ class App {
     document.documentElement.classList.remove('no-js');
     this.container = container;
     this.scrollSpeed = scrollSpeed;
+    this.isVisible = true; // IntersectionObserver 控制，默认可见
     this.scroll = { ease: scrollEase, current: 0, target: 0, last: 0 };
     this.onCheckDebounce = debounce(this.onCheck, 200);
     this.createRenderer();
@@ -419,8 +420,8 @@ class App {
   }
   createGeometry() {
     this.planeGeometry = new Plane(this.gl, {
-      heightSegments: 50,
-      widthSegments: 100
+      heightSegments: 20,
+      widthSegments: 40
     });
   }
   createMedias(items, bend = 1, textColor, borderRadius, font) {
@@ -508,6 +509,11 @@ class App {
     }
   }
   update() {
+    // 不可见时跳过渲染，节省 GPU
+    if (!this.isVisible) {
+      this.raf = window.requestAnimationFrame(this.update.bind(this));
+      return;
+    }
     this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
     const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
     if (this.medias) {
@@ -603,6 +609,24 @@ export default function CircularGallery({
       }
     };
   }, [bend, textColor, borderRadius, font, fontUrl, scrollSpeed, scrollEase]);
+
+  // IntersectionObserver: 不可见时暂停 OGL 渲染循环
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (appRef.current) {
+          appRef.current.isVisible = entry.isIntersecting;
+        }
+      },
+      { threshold: 0 }
+    );
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, []);
 
   // 2. Watch for items changes (filter changes)
   useEffect(() => {

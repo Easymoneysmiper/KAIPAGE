@@ -50,8 +50,8 @@ KAIPage/
         ├── App.jsx             # Main page controller: layout, simulators, Canvas textures
         ├── App.css             # App-specific 3D parallax styles
         │
+        ├── ServerHangarCanvas.jsx # 3D server hangar canvas with lighting wave animation
         ├── GooeyNav.jsx/css    # Sticky gooey fluid navigation bar
-        ├── Lanyard.jsx/css     # 3D physics badge + rope simulation (R3F + Rapier)
         ├── ProfileCard.jsx/css # 3D tilt-gloss personal card
         ├── ElectricBorder.jsx/css  # Animated flowing electric border
         ├── RotatingText.jsx/css    # Character/word rotation animation
@@ -64,26 +64,17 @@ KAIPage/
         ├── GlassIcons.jsx/css      # Glass-morphism icon filter buttons
         ├── MagicBento.jsx/css      # Bento grid layout component
         └── assets/                 # 3D models and textures
-            ├── card.glb            # 3D badge model (clip + base + plate)
-            ├── lanyard.png         # Rope weave texture
-            └── hero.png            # Hero image
+          └── hero.png            # Hero image
 ```
 
 ### Page Sections (App.jsx)
 
-1. **Hero** (`#hero`): Full-viewport with video background, grid overlay, interactive Canvas particles, SplitText headings, RotatingText loop, ElectricBorder + TextType combo
+1. **Hero** (`#hero`): Full-viewport with 3D ServerHangarCanvas background (lighting wave, zoom-in animation), grid overlay, interactive Canvas particles, SplitText headings, RotatingText loop, ElectricBorder + TextType combo
 2. **Bio** (`#experience`): ProfileCard (3D tilt card) + CircularGallery (3D image carousel) with GlassIcons category filters lifecycle/life photos and tech/reflections
 3. **Competencies** (`#competencies`): 4-column static benefit cards (Vibe Coding, Java JUC, MySQL, Redis/Kafka)
 4. **Footer** (`#footer`): Contact info + email/phone CTAs
 
 ### Key Technical Details
-
-**3D Lanyard Physics (Lanyard.jsx):**
-- Uses Rapier physics engine via `@react-three/rapier`
-- Physics: 1 fixed anchor point + 3 rope joints + 1 spherical joint (card)
-- Card is `kinematicPosition` — draggable by user, snaps back on release
-- Dynamic Canvas textures: `generateFrontTexture()` and `generateBackTexture()` draw high-res (1024x1536) card faces at runtime
-- Known fix: The outer wrapper div must NOT use `scale-*` transitions — CSS scale causes R3F Canvas to misread container bounds on scroll re-render, shifting the 3D anchor point. Only `opacity` + `translate-y` transitions are safe.
 
 **Scroll-driven Animations (App.jsx):**
 - GSAP ScrollTrigger timeline on `#experience` section: animates profile card, titles, filter buttons, gallery with staggered entrance
@@ -114,6 +105,5 @@ KAIPage/
 - `vite.config.js` includes `assetsInclude: ['**/*.glb']` — 3D models must be imported as assets
 - Tailwind CSS v4 uses `@import "tailwindcss"` (not `@tailwind base/components/utilities`)
 - Font theme is defined via `@theme` block in `index.css`
-- 3D Lanyard wrapper animations must avoid CSS `scale` transitions (see Known Issues in `project_progress_documentation.md`)
 - **功能编写完毕后，自动进行测试并修复发现的问题。** 包括：启动服务、验证编译通过、前端 E2E 测试（如 Puppeteer）。测试失败时自动排查并修复，直到全部通过。
 - **修改完成后必须更新相关的技术文档**（CLAUDE.md、`project_progress_documentation.md` 等），保持文档与代码一致。

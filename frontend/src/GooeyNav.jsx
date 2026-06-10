@@ -151,7 +151,12 @@ const GooeyNav = ({
     });
 
     resizeObserver.observe(containerRef.current);
-    return () => resizeObserver.disconnect();
+    return () => {
+      resizeObserver.disconnect();
+      if (filterRef.current) {
+        filterRef.current.querySelectorAll('.particle').forEach(p => p.remove());
+      }
+    };
   }, [activeIndex]);
 
   return (
