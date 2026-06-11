@@ -33,6 +33,13 @@ export default function App() {
   
   const [isHangarReady] = useState(true);
   const [activeNavIndex, setActiveNavIndex] = useState(0);
+  const [isCanvasActive, setIsCanvasActive] = useState(true);
+
+  const isScrollingRef = useRef(false);
+  const currentPageStateRef = useRef(0);
+  const lastDirectionRef = useRef(0);
+  const lastTransitionTimeRef = useRef(0);
+  const wheelEndTimeoutRef = useRef(null);
 
   // Initialize smooth scrolling
   useEffect(() => {
@@ -64,90 +71,280 @@ export default function App() {
       scrollTrigger: {
         trigger: '.horizontal-scroll-container',
         pin: true,
-        scrub: 0.5,
+        scrub: 0.15,
         start: 'top top',
         end: () => `+=${window.innerWidth * 4}`, // Total scroll distance is 4 viewports wide
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           const progress = self.progress;
 
-          // Fade out hangar canvas as soon as we slide past the Hero page (progress > 0.25)
-          // Fade starts at 0.25, ends at 0.35
+          // Fade out hangar canvas as soon as we slide past the Hero page (progress > 0.01)
           if (hangarContainerRef.current) {
-            if (progress <= 0.25) {
+            if (progress <= 0.01) {
               hangarContainerRef.current.style.opacity = '1';
               hangarContainerRef.current.style.visibility = 'visible';
-            } else if (progress >= 0.35) {
+            } else if (progress >= 0.11) {
               hangarContainerRef.current.style.opacity = '0';
               hangarContainerRef.current.style.visibility = 'hidden';
             } else {
-              const ratio = (progress - 0.25) / 0.1;
+              const ratio = (progress - 0.01) / 0.1;
               hangarContainerRef.current.style.opacity = String(1 - ratio);
               hangarContainerRef.current.style.visibility = 'visible';
             }
           }
 
-          // Calculate active index with precise midpoint thresholds:
-          // p inside [0, 0.375) is Index 0 (Hero)
-          // p inside [0.375, 0.625) is Index 1 (Operator)
-          // p inside [0.625, 0.875) is Index 2 (World)
-          // p inside [0.875, 1.0] is Index 3 (Projects)
-          let index;
-          if (progress < 0.375) {
-            index = 0;
-          } else if (progress < 0.625) {
-            index = 1;
-          } else if (progress < 0.875) {
-            index = 2;
+          // Toggle Canvas rendering loop active state (only active when visible, i.e., progress < 0.11)
+          const active = progress < 0.11;
+          setIsCanvasActive((prev) => (prev !== active ? active : prev));
+
+          // Calculate current page state index:
+          // state 0: Hero Zoomed Out [0, 0.005)
+          // state 1: Hero Zoomed In [0.005, 0.175)
+          // state 2: Operator [0.175, 0.505)
+          // state 3: World [0.505, 0.835)
+          // state 4: Projects [0.835, 1.0]
+          let stateIdx;
+          if (progress < 0.005) {
+            stateIdx = 0;
+          } else if (progress < 0.175) {
+            stateIdx = 1;
+          } else if (progress < 0.505) {
+            stateIdx = 2;
+          } else if (progress < 0.835) {
+            stateIdx = 3;
           } else {
-            index = 3;
+            stateIdx = 4;
           }
+          currentPageStateRef.current = stateIdx;
+
+          // Map stateIdx to activeNavIndex (0, 1, 2, 3)
+          let index = 0;
+          if (stateIdx === 0 || stateIdx === 1) index = 0;
+          else if (stateIdx === 2) index = 1;
+          else if (stateIdx === 3) index = 2;
+          else if (stateIdx === 4) index = 3;
           setActiveNavIndex(index);
         }
       }
     });
 
-    // Phase 1: Camera zoom-in phase (Progress 0.0 to 0.25). Container stays locked at X = 0.
-    horizontalTween.to({}, { duration: 1 });
-
-    // Phase 2: Slide phase (Progress 0.25 to 1.0). Translates container by -300vw (3 screens).
-    horizontalTween.to('.horizontal-scroll-container', {
-      x: () => -(window.innerWidth * 3),
-      ease: 'none',
-      duration: 3,
-    });
-
-    // Sub-animations inside panels triggered when sliding in
+    // Set initial positions: stacked centered but fully clipped to the right
+    gsap.set('.operator-section', { clipPath: 'inset(0% 0% 0% 100%)', x: 0, opacity: 1 });
+    gsap.set('.world-section', { clipPath: 'inset(0% 0% 0% 100%)', x: 0, opacity: 1 });
+    gsap.set('.projects-section', { clipPath: 'inset(0% 0% 0% 100%)', x: 0, opacity: 1 });
+    gsap.set('#wipe-line', { x: '100vw', opacity: 0 });
     gsap.set('.animate-profile-card', { x: -80, opacity: 0 });
-    const tlOperator = gsap.timeline({
-      scrollTrigger: {
-        trigger: '#operator',
-        containerAnimation: horizontalTween,
-        start: 'left 70%',
-        toggleActions: 'play none none none',
-      }
-    });
-    tlOperator.to('.animate-profile-card', { x: 0, opacity: 1, duration: 1.2, ease: 'power3.out' });
+
+    // Phase 1: Camera zoom-in phase (Progress 0.0 to 0.01).
+    horizontalTween.to({}, { duration: 0.03 });
+
+    // Phase 2: Operator page covers Hero page
+    horizontalTween.addLabel('operator')
+                  .to('#wipe-line', { opacity: 1, duration: 0.05 }, 'operator')
+                  .to('.operator-section', { clipPath: 'inset(0% 0% 0% 0%)', ease: 'none', duration: 0.99 }, 'operator')
+                  .to('#wipe-line', { x: 0, ease: 'none', duration: 0.99 }, 'operator')
+                  .to('.hero-section', { opacity: 0.2, x: '-15vw', ease: 'none', duration: 0.99 }, 'operator')
+                  .to('#wipe-line', { opacity: 0, duration: 0.05 }, 'operator+=0.94')
+                  // Fade/slide-in profile card as Operator page enters
+                  .to('.animate-profile-card', { x: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, 'operator+=0.5');
+
+    // Phase 3: World page covers Operator page
+    horizontalTween.addLabel('world', 'operator+=0.99')
+                  .set('#wipe-line', { x: '100vw', opacity: 0 }, 'world')
+                  .to('#wipe-line', { opacity: 1, duration: 0.05 }, 'world+=0.01')
+                  .to('.world-section', { clipPath: 'inset(0% 0% 0% 0%)', ease: 'none', duration: 0.99 }, 'world')
+                  .to('#wipe-line', { x: 0, ease: 'none', duration: 0.99 }, 'world')
+                  .to('.operator-section', { opacity: 0.2, x: '-15vw', ease: 'none', duration: 0.99 }, 'world')
+                  .to('#wipe-line', { opacity: 0, duration: 0.05 }, 'world+=0.94');
+
+    // Phase 4: Projects page covers World page
+    horizontalTween.addLabel('projects', 'world+=0.99')
+                  .set('#wipe-line', { x: '100vw', opacity: 0 }, 'projects')
+                  .to('#wipe-line', { opacity: 1, duration: 0.05 }, 'projects+=0.01')
+                  .to('.projects-section', { clipPath: 'inset(0% 0% 0% 0%)', ease: 'none', duration: 0.99 }, 'projects')
+                  .to('#wipe-line', { x: 0, ease: 'none', duration: 0.99 }, 'projects')
+                  .to('.world-section', { opacity: 0.2, x: '-15vw', ease: 'none', duration: 0.99 }, 'projects')
+                  .to('#wipe-line', { opacity: 0, duration: 0.05 }, 'projects+=0.94');
 
   }, []);
 
-  // Update navigation active index and scroll to corresponding vertical depth
-  const handleNavChange = (index) => {
-    setActiveNavIndex(index);
+  const handleStateChange = (stateIdx) => {
     if (lenisRef.current) {
       const H = window.innerWidth * 4;
       let targetProgress = 0;
-      if (index === 0) targetProgress = 0.25;
-      else if (index === 1) targetProgress = 0.5; // End of zoom (time=1) + centered Operator (time=2) -> time=2/4
-      else if (index === 2) targetProgress = 0.75; // Centered World (time=3) -> time=3/4
-      else if (index === 3) targetProgress = 1.0; // Centered Projects (time=4) -> time=4/4
+      if (stateIdx === 0) targetProgress = 0.0;
+      else if (stateIdx === 1) targetProgress = 0.01;
+      else if (stateIdx === 2) targetProgress = 0.34; // End of zoom + centered Operator
+      else if (stateIdx === 3) targetProgress = 0.67; // Centered World
+      else if (stateIdx === 4) targetProgress = 1.0;  // Centered Projects
       
-      lenisRef.current.scrollTo(targetProgress * H, { duration: 1.3 });
+      // Map stateIdx to activeNavIndex
+      let index = 0;
+      if (stateIdx === 0 || stateIdx === 1) index = 0;
+      else if (stateIdx === 2) index = 1;
+      else if (stateIdx === 3) index = 2;
+      else if (stateIdx === 4) index = 3;
+      setActiveNavIndex(index);
+
+      isScrollingRef.current = true;
+      lastTransitionTimeRef.current = Date.now();
+      lenisRef.current.scrollTo(targetProgress * H, { 
+        duration: 0.85,
+        easing: (t) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
+      });
+      
+      clearTimeout(wheelEndTimeoutRef.current);
+      wheelEndTimeoutRef.current = setTimeout(() => {
+        isScrollingRef.current = false;
+        lastDirectionRef.current = 0;
+      }, 900);
     }
   };
 
+  // Update navigation active index and scroll to corresponding vertical depth
+  const handleNavChange = (index) => {
+    let targetState = 0;
+    if (index === 0) targetState = 0; // Go to zoomed out
+    else if (index === 1) targetState = 2; // Go to Operator
+    else if (index === 2) targetState = 3; // Go to World
+    else if (index === 3) targetState = 4; // Go to Projects
+    
+    handleStateChange(targetState);
+  };
+
+  // Handle discrete mousewheel page-by-page transitions (filtering out continuous ticks)
+  useEffect(() => {
+    const isInsideScrollable = (element) => {
+      let el = element;
+      while (el && el !== document.body) {
+        if (el.parentElement) {
+          const style = window.getComputedStyle(el);
+          const overflowY = style.overflowY;
+          const isScrollable = overflowY === 'auto' || overflowY === 'scroll';
+          if (isScrollable && el.scrollHeight > el.clientHeight) {
+            return true;
+          }
+        }
+        el = el.parentElement;
+      }
+      return false;
+    };
+
+    const handleWheel = (e) => {
+      // Allow standard scrolling inside active list items or details modal
+      if (isInsideScrollable(e.target)) {
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.stopImmediatePropagation) {
+        e.stopImmediatePropagation();
+      }
+
+      const delta = e.deltaY;
+      if (Math.abs(delta) < 15) return; // filter minor noise
+
+      const direction = delta > 0 ? 1 : -1;
+      const dirChanged = lastDirectionRef.current !== 0 && direction !== lastDirectionRef.current;
+
+      // 1. If currently in transition animation
+      if (isScrollingRef.current) {
+        if (!dirChanged) {
+          // If scrolling in the same direction, extend the lock dynamically
+          lastDirectionRef.current = direction;
+          clearTimeout(wheelEndTimeoutRef.current);
+          const timeSinceTransition = Date.now() - lastTransitionTimeRef.current;
+          const extendDelay = Math.max(900 - timeSinceTransition, 300); // Minimum lock of 900ms, or 300ms since last event
+          wheelEndTimeoutRef.current = setTimeout(() => {
+            isScrollingRef.current = false;
+            lastDirectionRef.current = 0;
+          }, extendDelay);
+        } else {
+          // If direction changed, immediately trigger transition in the opposite direction
+          isScrollingRef.current = false;
+          lastDirectionRef.current = direction;
+          
+          const currentState = currentPageStateRef.current;
+          let nextState = currentState;
+
+          if (direction > 0) {
+            if (currentState < 4) nextState = currentState + 1;
+          } else {
+            if (currentState > 0) nextState = currentState - 1;
+          }
+
+          if (nextState !== currentState) {
+            handleStateChange(nextState);
+          }
+        }
+        return;
+      }
+
+      // 2. If not scrolling, trigger the transition
+      lastDirectionRef.current = direction;
+
+      const currentState = currentPageStateRef.current;
+      let nextState = currentState;
+
+      if (delta > 0) {
+        if (currentState < 4) nextState = currentState + 1;
+      } else {
+        if (currentState > 0) nextState = currentState - 1;
+      }
+
+      if (nextState !== currentState) {
+        handleStateChange(nextState);
+      }
+    };
+
+    const handleKeyDown = (e) => {
+      const activeElement = document.activeElement;
+      if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
+        return;
+      }
+
+      const blockedKeys = ['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Space', ' ', 'Home', 'End'];
+      if (blockedKeys.includes(e.key)) {
+        e.preventDefault();
+        
+        if (isScrollingRef.current) return;
+
+        const currentState = currentPageStateRef.current;
+        let nextState = currentState;
+
+        if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ' || e.key === 'Space') {
+          if (currentState < 4) nextState = currentState + 1;
+        } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+          if (currentState > 0) nextState = currentState - 1;
+        } else if (e.key === 'Home') {
+          nextState = 0;
+        } else if (e.key === 'End') {
+          nextState = 4;
+        }
+
+        if (nextState !== currentState) {
+          handleStateChange(nextState);
+        }
+      }
+    };
+
+    // Use capture: true for wheel to execute BEFORE Lenis's bubbling wheel listener
+    window.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+    window.addEventListener('keydown', handleKeyDown, { passive: false });
+    
+    return () => {
+      window.removeEventListener('wheel', handleWheel, { capture: true });
+      window.removeEventListener('keydown', handleKeyDown);
+      clearTimeout(wheelEndTimeoutRef.current);
+    };
+  }, []);
+
   // Tactical Hero Canvas background network particles (mouse gravity)
   useEffect(() => {
+    // Only run particle loop when Hero page is active (index 0) to save CPU
+    if (activeNavIndex !== 0) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -243,7 +440,7 @@ export default function App() {
       canvas.removeEventListener('mouseleave', handleMouseLeave);
       window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [activeNavIndex]);
 
   // Update scrolling progress bar at top
   useEffect(() => {
@@ -268,7 +465,7 @@ export default function App() {
         ref={hangarContainerRef}
         className="fixed inset-0 w-full h-full z-0 pointer-events-none transition-opacity duration-300"
       >
-        <ServerHangarCanvas isReady={isHangarReady} />
+        <ServerHangarCanvas isReady={isHangarReady} isActive={isCanvasActive} />
       </div>
 
       {/* Top scroll progress indicator */}
@@ -287,11 +484,18 @@ export default function App() {
         navItems={navItems} 
       />
 
-      {/* Main Pages Container */}
-      <div className="horizontal-scroll-container relative z-10 flex flex-row w-[400vw] h-screen overflow-hidden">
+      {/* Main Pages Container (Stacked Absolute Layout) */}
+      <div className="horizontal-scroll-container relative z-10 w-full h-screen overflow-hidden">
+        
+        {/* Wipe dividing line boundary */}
+        <div 
+          id="wipe-line"
+          className="absolute top-0 bottom-0 w-[3px] bg-ark-cyan shadow-[0_0_15px_#00f0ff] z-[99] pointer-events-none"
+          style={{ transform: 'translateX(100vw)', opacity: 0 }}
+        />
         
         {/* ==================== 1. HERO INDEX PAGE ==================== */}
-        <section id="hero" className="relative w-[100vw] h-screen flex-shrink-0 overflow-y-auto flex flex-col justify-start pt-36 pb-16 px-6 md:px-12 border-r border-white/5">
+        <section id="hero" className="hero-section absolute inset-0 w-full h-screen overflow-y-auto flex flex-col justify-start pt-36 pb-16 px-6 md:px-12 z-10">
           
           {/* Tactical grid background overlay */}
           <div className="absolute inset-0 pointer-events-none z-20 grid grid-cols-1 md:grid-cols-12 max-w-[1700px] mx-auto w-full">
@@ -388,17 +592,17 @@ export default function App() {
         </section>
 
         {/* ==================== 2. OPERATOR BIO PAGE ==================== */}
-        <section id="operator" className="w-[100vw] h-screen flex-shrink-0 overflow-y-auto border-r border-white/5">
+        <section id="operator" className="operator-section absolute inset-0 w-full h-screen overflow-y-auto z-20 bg-[#0A0A0C]">
           <OperatorProfile />
         </section>
 
         {/* ==================== 3. WORLD BLOG/SHARING PAGE ==================== */}
-        <section id="world" className="w-[100vw] h-screen flex-shrink-0 overflow-y-auto border-r border-white/5">
-          <OriginiumSharing />
+        <section id="world" className="world-section absolute inset-0 w-full h-screen overflow-y-auto z-30 bg-[#0A0A0C]">
+          <OriginiumSharing isActive={activeNavIndex === 2} />
         </section>
 
         {/* ==================== 4. PROJECTS WORKSPACE PAGE ==================== */}
-        <section id="projects" className="w-[100vw] h-screen flex-shrink-0 overflow-y-auto">
+        <section id="projects" className="projects-section absolute inset-0 w-full h-screen overflow-y-auto z-40 bg-[#0A0A0C]">
           <ProjectDesk />
         </section>
 

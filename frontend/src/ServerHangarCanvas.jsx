@@ -397,37 +397,48 @@ function HangarRoom({ roomIdx, roomX, sharedAssets, lightRefs, panelRefs }) {
         />
       ))}
 
-      {/* Room Lights */}
+      {/* Room Lights - Panels only (12 ceiling panels) */}
       {lightsData.map((light, index) => {
-        // Light color per room
         const lightColors = ["#ff8c00", "#d500f9", "#00ff66", "#ff3d00"];
         const lightColor = lightColors[roomIdx];
         
         return (
-          <group key={light.id}>
-            <LightPanel 
-              ref={(el) => {
-                if (panelRefs.current[roomIdx]) {
-                  panelRefs.current[roomIdx][index] = el;
-                }
-              }} 
-              position={light.position} 
-              sharedAssets={sharedAssets}
-              lightColor={lightColor}
-            />
-            <pointLight
-              ref={(el) => {
-                if (lightRefs.current[roomIdx]) {
-                  lightRefs.current[roomIdx][index] = el;
-                }
-              }}
-              position={[light.position[0], light.position[1] - 0.2, light.position[2]]}
-              intensity={0}
-              distance={14.0}
-              decay={1.15}
-              color={lightColor}
-            />
-          </group>
+          <LightPanel 
+            key={light.id}
+            ref={(el) => {
+              if (panelRefs.current[roomIdx]) {
+                panelRefs.current[roomIdx][index] = el;
+              }
+            }} 
+            position={light.position} 
+            sharedAssets={sharedAssets}
+            lightColor={lightColor}
+          />
+        );
+      })}
+
+      {/* Room Lights - Actual Point Lights (2 corridor lights per room to save GPU) */}
+      {[
+        { id: `L-point-0`, pos: [roomX, 4.2, 1.0] },  // Front light
+        { id: `L-point-1`, pos: [roomX, 4.2, -9.0] }  // Back light
+      ].map((light, index) => {
+        const lightColors = ["#ff8c00", "#d500f9", "#00ff66", "#ff3d00"];
+        const lightColor = lightColors[roomIdx];
+        
+        return (
+          <pointLight
+            key={light.id}
+            ref={(el) => {
+              if (lightRefs.current[roomIdx]) {
+                lightRefs.current[roomIdx][index] = el;
+              }
+            }}
+            position={light.pos}
+            intensity={0}
+            distance={18.0}
+            decay={1.15}
+            color={lightColor}
+          />
         );
       })}
     </group>
@@ -464,14 +475,14 @@ function SceneController({ isReady, sharedAssets }) {
       onUpdate: (self) => {
         const p = self.progress;
         
-        // p inside [0, 0.25]: target X is 0 (Home Room)
-        // p inside [0.25, 1.0]: target X interpolates from 0 to 45 (Room 3)
-        if (p <= 0.25) {
+        // p inside [0, 0.01]: target X is 0 (Home Room)
+        // p inside [0.01, 1.0]: target X interpolates from 0 to 45 (Room 3)
+        if (p <= 0.01) {
           targetCamPos.current.x = 0;
           // Zoom-in along Z for Room 1
-          targetCamPos.current.z = 9.5 - (p / 0.25) * 3.9;
+          targetCamPos.current.z = 9.5 - (p / 0.01) * 3.9;
         } else {
-          targetCamPos.current.x = ((p - 0.25) / 0.75) * 45;
+          targetCamPos.current.x = ((p - 0.01) / 0.99) * 45;
           targetCamPos.current.z = 5.6;
         }
         
@@ -530,36 +541,45 @@ function SceneController({ isReady, sharedAssets }) {
           // Room 1 (Home) sequential light ignition on scroll
           const trigger = ScrollTrigger.getById("globalScroll");
           const p = trigger ? trigger.progress : 0;
-          const zoomP = Math.min(1.0, p / 0.25);
+          const zoomP = Math.min(1.0, p / 0.01);
 
+          // Update the 12 ceiling panels
           for (let index = 0; index < 12; index++) {
             const zOrder = Math.floor(index / 2); // row index 0 to 5
             const rowStart = (5 - zOrder) * 0.15;
             const rowEnd = rowStart + 0.25;
             const rowP = Math.min(1.0, Math.max(0.0, (zoomP - rowStart) / (rowEnd - rowStart)));
-
-            const intensityVal = 12.0 * rowP * factor;
             const opacityVal = rowP * factor;
 
-            if (roomLights && roomLights[index]) {
-              roomLights[index].intensity = intensityVal;
-            }
             if (roomPanels && roomPanels[index] && roomPanels[index].material) {
               roomPanels[index].material.opacity = opacityVal;
+            }
+          }
+
+          // Update the 2 point lights sequentially
+          if (roomLights) {
+            // Light 1 (back): lights up first as zoomP goes from 0 to 0.6
+            const backP = Math.min(1.0, Math.max(0.0, zoomP / 0.6));
+            if (roomLights[1]) {
+              roomLights[1].intensity = 18.0 * backP * factor;
+            }
+            // Light 0 (front): lights up second as zoomP goes from 0.4 to 1.0
+            const frontP = Math.min(1.0, Math.max(0.0, (zoomP - 0.4) / 0.6));
+            if (roomLights[0]) {
+              roomLights[0].intensity = 18.0 * frontP * factor;
             }
           }
         } else {
           // Other rooms: simple fade in/out based on camera distance
           for (let index = 0; index < 12; index++) {
-            const intensityVal = 12.0 * factor;
             const opacityVal = factor;
-
-            if (roomLights && roomLights[index]) {
-              roomLights[index].intensity = intensityVal;
-            }
             if (roomPanels && roomPanels[index] && roomPanels[index].material) {
               roomPanels[index].material.opacity = opacityVal;
             }
+          }
+          if (roomLights) {
+            if (roomLights[0]) roomLights[0].intensity = 18.0 * factor;
+            if (roomLights[1]) roomLights[1].intensity = 18.0 * factor;
           }
         }
       }
@@ -576,7 +596,7 @@ function SceneController({ isReady, sharedAssets }) {
         <planeGeometry args={[160, 100]} />
         <MeshReflectorMaterial
           blur={[300, 100]}
-          resolution={512}
+          resolution={256}
           mixBlur={1.0}
           mixStrength={3.0} // High glossy reflection matching the image
           roughness={0.02} // Highly polished glossy floor for sharp mirror reflection
@@ -620,7 +640,7 @@ function SceneController({ isReady, sharedAssets }) {
 }
 
 // ==================== Main ServerHangarCanvas Component ====================
-export default function ServerHangarCanvas({ isReady = true }) {
+export default function ServerHangarCanvas({ isReady = true, isActive = true }) {
   // Shared assets (geometries & materials) created once and passed to all server racks
   const sharedAssets = useMemo(() => {
     // Machine Geometries
@@ -841,7 +861,8 @@ export default function ServerHangarCanvas({ isReady = true }) {
       <Canvas
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
         style={{ pointerEvents: 'none' }}
-        frameloop="demand"
+        frameloop={isActive ? "always" : "demand"}
+        dpr={[1, 1.5]}
       >
         <ambientLight intensity={0.24} />
         <hemisphereLight skyColor="#bce0ff" groundColor="#151520" intensity={0.35} />
