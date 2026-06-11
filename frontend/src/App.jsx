@@ -33,9 +33,8 @@ export default function App() {
   const [isHangarReady] = useState(true);
   const [activeNavIndex, setActiveNavIndex] = useState(0);
 
-  // Initialize smooth scrolling and active index scroll sync
+  // Initialize smooth scrolling
   useEffect(() => {
-
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -52,31 +51,56 @@ export default function App() {
 
     gsap.ticker.lagSmoothing(0);
 
-    // Sync active nav index based on vertical scroll triggers
-    const triggers = navItems.map((item, index) => {
-      return ScrollTrigger.create({
-        trigger: item.href,
-        start: 'top 50%',
-        end: 'bottom 50%',
-        onEnter: () => setActiveNavIndex(index),
-        onEnterBack: () => setActiveNavIndex(index),
-      });
-    });
-
     return () => {
       lenis.destroy();
       gsap.ticker.remove(lenis.raf);
-      triggers.forEach(t => t.kill());
     };
   }, []);
 
-  // Update navigation active index and scroll to section smoothly
+  // GSAP Horizontal scroll timeline mapping vertical scroll depth to horizontal offset
+  useGSAP(() => {
+    const horizontalTween = gsap.timeline({
+      scrollTrigger: {
+        trigger: '.horizontal-scroll-container',
+        pin: true,
+        scrub: 0.5,
+        start: 'top top',
+        end: () => `+=${window.innerWidth * 3}`,
+        invalidateOnRefresh: true,
+        onUpdate: (self) => {
+          const progress = self.progress;
+          const index = Math.round(progress * 3);
+          setActiveNavIndex(index);
+        }
+      }
+    });
+
+    horizontalTween.to('.horizontal-scroll-container', {
+      x: () => -(window.innerWidth * 3),
+      ease: 'none',
+    });
+
+    // Sub-animations inside panels when swiping in
+    gsap.set('.animate-profile-card', { x: -80, opacity: 0 });
+    const tlOperator = gsap.timeline({
+      scrollTrigger: {
+        trigger: '#operator',
+        containerAnimation: horizontalTween,
+        start: 'left 70%',
+        toggleActions: 'play none none none',
+      }
+    });
+    tlOperator.to('.animate-profile-card', { x: 0, opacity: 1, duration: 1.2, ease: 'power3.out' });
+
+  }, []);
+
+  // Update navigation active index and scroll to corresponding vertical depth
   const handleNavChange = (index) => {
     setActiveNavIndex(index);
-    const targetItem = navItems[index];
-    const element = document.querySelector(targetItem.href);
-    if (element && lenisRef.current) {
-      lenisRef.current.scrollTo(element, { duration: 1.3 });
+    if (lenisRef.current) {
+      const H = window.innerWidth * 3;
+      const targetScroll = (index / 3) * H;
+      lenisRef.current.scrollTo(targetScroll, { duration: 1.3 });
     }
   };
 
@@ -217,10 +241,10 @@ export default function App() {
       />
 
       {/* Main Pages Container */}
-      <div className="relative z-10">
+      <div className="horizontal-scroll-container relative z-10 flex flex-row w-[400vw] h-screen overflow-hidden">
         
         {/* ==================== 1. HERO INDEX PAGE ==================== */}
-        <section id="hero" className="relative h-screen flex flex-col justify-start pt-36 overflow-hidden pb-16 px-6 md:px-12 border-b border-white/5">
+        <section id="hero" className="relative w-[100vw] h-screen flex-shrink-0 overflow-y-auto flex flex-col justify-start pt-36 pb-16 px-6 md:px-12 border-r border-white/5">
           
           {/* Tactical grid background overlay */}
           <div className="absolute inset-0 pointer-events-none z-20 grid grid-cols-1 md:grid-cols-12 max-w-[1700px] mx-auto w-full">
@@ -317,19 +341,19 @@ export default function App() {
         </section>
 
         {/* ==================== 2. OPERATOR BIO PAGE ==================== */}
-        <div id="operator">
+        <section id="operator" className="w-[100vw] h-screen flex-shrink-0 overflow-y-auto border-r border-white/5">
           <OperatorProfile />
-        </div>
+        </section>
 
         {/* ==================== 3. WORLD BLOG/SHARING PAGE ==================== */}
-        <div id="world">
+        <section id="world" className="w-[100vw] h-screen flex-shrink-0 overflow-y-auto border-r border-white/5">
           <OriginiumSharing />
-        </div>
+        </section>
 
         {/* ==================== 4. PROJECTS WORKSPACE PAGE ==================== */}
-        <div id="projects">
+        <section id="projects" className="w-[100vw] h-screen flex-shrink-0 overflow-y-auto">
           <ProjectDesk />
-        </div>
+        </section>
 
       </div>
     </div>
