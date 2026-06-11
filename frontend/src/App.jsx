@@ -65,22 +65,41 @@ export default function App() {
         pin: true,
         scrub: 0.5,
         start: 'top top',
-        end: () => `+=${window.innerWidth * 3}`,
+        end: () => `+=${window.innerWidth * 4}`, // Total scroll distance is 4 viewports wide
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           const progress = self.progress;
-          const index = Math.round(progress * 3);
+          // Calculate active index with precise midpoint thresholds:
+          // p inside [0, 0.375) is Index 0 (Hero)
+          // p inside [0.375, 0.625) is Index 1 (Operator)
+          // p inside [0.625, 0.875) is Index 2 (World)
+          // p inside [0.875, 1.0] is Index 3 (Projects)
+          let index;
+          if (progress < 0.375) {
+            index = 0;
+          } else if (progress < 0.625) {
+            index = 1;
+          } else if (progress < 0.875) {
+            index = 2;
+          } else {
+            index = 3;
+          }
           setActiveNavIndex(index);
         }
       }
     });
 
+    // Phase 1: Camera zoom-in phase (Progress 0.0 to 0.25). Container stays locked at X = 0.
+    horizontalTween.to({}, { duration: 1 });
+
+    // Phase 2: Slide phase (Progress 0.25 to 1.0). Translates container by -300vw (3 screens).
     horizontalTween.to('.horizontal-scroll-container', {
       x: () => -(window.innerWidth * 3),
       ease: 'none',
+      duration: 3,
     });
 
-    // Sub-animations inside panels when swiping in
+    // Sub-animations inside panels triggered when sliding in
     gsap.set('.animate-profile-card', { x: -80, opacity: 0 });
     const tlOperator = gsap.timeline({
       scrollTrigger: {
@@ -98,9 +117,14 @@ export default function App() {
   const handleNavChange = (index) => {
     setActiveNavIndex(index);
     if (lenisRef.current) {
-      const H = window.innerWidth * 3;
-      const targetScroll = (index / 3) * H;
-      lenisRef.current.scrollTo(targetScroll, { duration: 1.3 });
+      const H = window.innerWidth * 4;
+      let targetProgress = 0;
+      if (index === 0) targetProgress = 0;
+      else if (index === 1) targetProgress = 0.5; // End of zoom (time=1) + centered Operator (time=2) -> time=2/4
+      else if (index === 2) targetProgress = 0.75; // Centered World (time=3) -> time=3/4
+      else if (index === 3) targetProgress = 1.0; // Centered Projects (time=4) -> time=4/4
+      
+      lenisRef.current.scrollTo(targetProgress * H, { duration: 1.3 });
     }
   };
 
