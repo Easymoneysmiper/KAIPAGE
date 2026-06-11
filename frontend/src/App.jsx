@@ -119,7 +119,7 @@ export default function App() {
     if (lenisRef.current) {
       const H = window.innerWidth * 4;
       let targetProgress = 0;
-      if (index === 0) targetProgress = 0;
+      if (index === 0) targetProgress = 0.25;
       else if (index === 1) targetProgress = 0.5; // End of zoom (time=1) + centered Operator (time=2) -> time=2/4
       else if (index === 2) targetProgress = 0.75; // Centered World (time=3) -> time=3/4
       else if (index === 3) targetProgress = 1.0; // Centered Projects (time=4) -> time=4/4
