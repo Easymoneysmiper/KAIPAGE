@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 import React, { useRef, useEffect, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
@@ -222,7 +223,7 @@ const LightPanel = React.forwardRef(({ position, sharedAssets, lightColor = "#ff
 });
 
 // ==================== Partition Wall between rooms ====================
-function PartitionWall({ boundaryX, sharedAssets }) {
+function PartitionWall({ boundaryX }) {
   return (
     <group>
       {/* Left partition wall (Z < -2) */}
@@ -458,19 +459,19 @@ function SceneController({ isReady, sharedAssets }) {
       id: "globalScroll",
       trigger: document.documentElement,
       start: 'top top',
-      end: () => `+=${window.innerWidth * 2.5}`, // Matches the total scroll height in App.jsx (2.5 width sections)
+      end: 'bottom bottom',
       scrub: true,
       onUpdate: (self) => {
         const p = self.progress;
         
-        // p inside [0, 0.2]: target X is 0 (Home Room)
-        // p inside [0.2, 1.0]: target X interpolates from 0 to 30
-        if (p <= 0.2) {
+        // p inside [0, 0.25]: target X is 0 (Home Room)
+        // p inside [0.25, 1.0]: target X interpolates from 0 to 45 (Room 3)
+        if (p <= 0.25) {
           targetCamPos.current.x = 0;
           // Zoom-in along Z for Room 1
-          targetCamPos.current.z = 9.5 - (p / 0.2) * 3.9;
+          targetCamPos.current.z = 9.5 - (p / 0.25) * 3.9;
         } else {
-          targetCamPos.current.x = ((p - 0.2) / 0.8) * 30;
+          targetCamPos.current.x = ((p - 0.25) / 0.75) * 45;
           targetCamPos.current.z = 5.6;
         }
         
@@ -484,12 +485,13 @@ function SceneController({ isReady, sharedAssets }) {
   }, [isReady, camera, invalidate]);
 
   useFrame((state) => {
+    const cam = state.camera;
     // 1. Smoothly interpolate camera position towards target position:
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamPos.current.x, 0.1);
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamPos.current.z, 0.1);
-    camera.position.y = 1.6;
+    cam.position.x = THREE.MathUtils.lerp(cam.position.x, targetCamPos.current.x, 0.1);
+    cam.position.z = THREE.MathUtils.lerp(cam.position.z, targetCamPos.current.z, 0.1);
+    cam.position.y = 1.6;
 
-    camera.lookAt(camera.position.x, 1.45, -9);
+    cam.lookAt(cam.position.x, 1.45, -9);
 
     const camX = camera.position.x;
     const time = state.clock.getElapsedTime();
@@ -571,7 +573,7 @@ function SceneController({ isReady, sharedAssets }) {
     <>
       {/* ⚠️ HIGH AESTHETIC: Real Mirror Reflector Floor for glowing orange reflection */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[22.5, 0, 0]}>
-        <planeGeometry args={[120, 100]} />
+        <planeGeometry args={[160, 100]} />
         <MeshReflectorMaterial
           blur={[300, 100]}
           resolution={512}
@@ -588,7 +590,7 @@ function SceneController({ isReady, sharedAssets }) {
 
       {/* Ceiling */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[22.5, 4.5, 0]}>
-        <planeGeometry args={[120, 100]} />
+        <planeGeometry args={[160, 100]} />
         <meshStandardMaterial 
           color="#050507"
           roughness={0.5}
@@ -597,7 +599,7 @@ function SceneController({ isReady, sharedAssets }) {
       </mesh>
 
       {/* Rooms */}
-      {Array.from({ length: 3 }).map((_, r) => (
+      {Array.from({ length: 4 }).map((_, r) => (
         <group key={`room-${r}`} ref={(el) => (roomGroupsRef.current[r] = el)}>
           <HangarRoom
             roomIdx={r}
@@ -612,6 +614,7 @@ function SceneController({ isReady, sharedAssets }) {
       {/* Partition Walls between rooms */}
       <PartitionWall boundaryX={7.5} sharedAssets={sharedAssets} />
       <PartitionWall boundaryX={22.5} sharedAssets={sharedAssets} />
+      <PartitionWall boundaryX={37.5} sharedAssets={sharedAssets} />
     </>
   );
 }
