@@ -29,6 +29,7 @@ export default function App() {
   const scrollBarRef = useRef(null);
   const canvasRef = useRef(null);
   const lenisRef = useRef(null);
+  const hangarContainerRef = useRef(null);
   
   const [isHangarReady] = useState(true);
   const [activeNavIndex, setActiveNavIndex] = useState(0);
@@ -69,6 +70,23 @@ export default function App() {
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           const progress = self.progress;
+
+          // Fade out hangar canvas as soon as we slide past the Hero page (progress > 0.25)
+          // Fade starts at 0.25, ends at 0.35
+          if (hangarContainerRef.current) {
+            if (progress <= 0.25) {
+              hangarContainerRef.current.style.opacity = '1';
+              hangarContainerRef.current.style.visibility = 'visible';
+            } else if (progress >= 0.35) {
+              hangarContainerRef.current.style.opacity = '0';
+              hangarContainerRef.current.style.visibility = 'hidden';
+            } else {
+              const ratio = (progress - 0.25) / 0.1;
+              hangarContainerRef.current.style.opacity = String(1 - ratio);
+              hangarContainerRef.current.style.visibility = 'visible';
+            }
+          }
+
           // Calculate active index with precise midpoint thresholds:
           // p inside [0, 0.375) is Index 0 (Hero)
           // p inside [0.375, 0.625) is Index 1 (Operator)
@@ -246,7 +264,12 @@ export default function App() {
     <div className="min-h-screen bg-[#0A0A0C] text-white selection:bg-[#00f0ff] selection:text-black relative font-sans overflow-x-hidden ark-scanline">
       
       {/* 3D Server Hangar Background */}
-      <ServerHangarCanvas isReady={isHangarReady} />
+      <div 
+        ref={hangarContainerRef}
+        className="fixed inset-0 w-full h-full z-0 pointer-events-none transition-opacity duration-300"
+      >
+        <ServerHangarCanvas isReady={isHangarReady} />
+      </div>
 
       {/* Top scroll progress indicator */}
       <div className="fixed top-0 left-0 right-0 h-[2px] bg-white/5 z-[99999]">
