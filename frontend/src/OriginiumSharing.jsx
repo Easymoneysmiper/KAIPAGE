@@ -625,7 +625,7 @@ export default function OriginiumSharing({ isActive = false }) {
               <button
                 key={cat.id}
                 onClick={() => handleCategoryChange(cat.id)}
-                className="relative px-4 py-2 font-black font-mono text-[22px] tracking-wider uppercase transition-all duration-300 cursor-pointer"
+                className="relative px-4 py-2 font-black font-mono text-[16.5px] tracking-wider uppercase transition-all duration-300 cursor-pointer"
                 style={
                   activeCategory === cat.id
                     ? {
@@ -661,7 +661,7 @@ export default function OriginiumSharing({ isActive = false }) {
                   }`}
                 >
                   <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-4 text-[21px] font-mono font-medium">
+                    <div className="flex items-center gap-4 text-[16px] font-mono font-medium">
                       <span className={post.category === 'tech' ? 'text-ark-cyan bg-ark-cyan/10 px-1.5 py-0.5 rounded-[1px] border border-ark-cyan/20 font-bold' : 'text-ark-green bg-ark-green/10 px-1.5 py-0.5 rounded-[1px] border border-ark-green/20 font-bold'}>
                         {post.category === 'tech' ? '技术分享' : '生活'}
                       </span>
@@ -669,7 +669,7 @@ export default function OriginiumSharing({ isActive = false }) {
                         {post.date}
                       </span>
                     </div>
-                    <div className="text-[26px] font-bold text-white tracking-wider mt-0.5 group-hover:text-ark-cyan transition-colors duration-200">
+                    <div className="text-[19.5px] font-bold text-white tracking-wider mt-0.5 group-hover:text-ark-cyan transition-colors duration-200">
                       {`「${post.title}」`}
                     </div>
                   </div>
