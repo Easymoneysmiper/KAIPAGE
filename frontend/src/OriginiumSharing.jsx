@@ -508,7 +508,7 @@ export default function OriginiumSharing({ isActive = false }) {
       {/* ============ VIDEO BACKGROUND ============ */}
       <video
         ref={videoRef}
-        src="/world-bg.webm"
+        src="/world-bg-compressed.mp4"
         muted
         loop
         playsInline
