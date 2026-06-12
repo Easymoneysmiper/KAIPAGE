@@ -450,8 +450,8 @@ function SceneController({ isReady, sharedAssets }) {
   const { camera, invalidate } = useThree();
   
   const roomGroupsRef = useRef([]);
-  const lightRefs = useRef([[], [], [], []]);
-  const panelRefs = useRef([[], [], [], []]);
+  const lightRefs = useRef([[]]);
+  const panelRefs = useRef([[]]);
 
   // Camera target coordinates
   const targetCamPos = useRef({ x: 0, y: 1.6, z: 9.5 });
@@ -476,13 +476,16 @@ function SceneController({ isReady, sharedAssets }) {
         const p = self.progress;
         
         // p inside [0, 0.01]: target X is 0 (Home Room)
-        // p inside [0.01, 1.0]: target X interpolates from 0 to 45 (Room 3)
         if (p <= 0.01) {
           targetCamPos.current.x = 0;
-          // Zoom-in along Z for Room 1
+          // Zoom-in along Z for Room 0
           targetCamPos.current.z = 9.5 - (p / 0.01) * 3.9;
+        } else if (p <= 0.45) {
+          // Travel from Room 0 center to the partition wall at X = 7.5
+          targetCamPos.current.x = ((p - 0.01) / 0.44) * 7.5;
+          targetCamPos.current.z = 5.6;
         } else {
-          targetCamPos.current.x = ((p - 0.01) / 0.99) * 45;
+          targetCamPos.current.x = 7.5;
           targetCamPos.current.z = 5.6;
         }
         
@@ -498,8 +501,8 @@ function SceneController({ isReady, sharedAssets }) {
   useFrame((state) => {
     const cam = state.camera;
     // 1. Smoothly interpolate camera position towards target position:
-    cam.position.x = THREE.MathUtils.lerp(cam.position.x, targetCamPos.current.x, 0.1);
-    cam.position.z = THREE.MathUtils.lerp(cam.position.z, targetCamPos.current.z, 0.1);
+    cam.position.x = THREE.MathUtils.lerp(cam.position.x, targetCamPos.current.x, 0.16);
+    cam.position.z = THREE.MathUtils.lerp(cam.position.z, targetCamPos.current.z, 0.16);
     cam.position.y = 1.6;
 
     cam.lookAt(cam.position.x, 1.45, -9);
@@ -507,80 +510,64 @@ function SceneController({ isReady, sharedAssets }) {
     const camX = camera.position.x;
     const time = state.clock.getElapsedTime();
 
-    // 2. Loop over rooms and update visibility/lights
-    for (let r = 0; r < 4; r++) {
-      const roomX = r * 15;
-      const dx = Math.abs(camX - roomX);
-      const isVisible = dx < 12;
+    // 2. Update Room 0 (the only rendered room) visibility/lights
+    const roomX = 0;
+    const dx = Math.abs(camX - roomX);
+    const isVisible = dx < 12;
 
-      if (roomGroupsRef.current[r]) {
-        roomGroupsRef.current[r].visible = isVisible;
+    if (roomGroupsRef.current[0]) {
+      roomGroupsRef.current[0].visible = isVisible;
+    }
+
+    if (isVisible) {
+      const factor = Math.max(0, 1 - dx / 12.0);
+      const roomLights = lightRefs.current[0];
+      const roomPanels = panelRefs.current[0];
+
+      // Flicker indicator lights for Room 0:
+      for (let i = 0; i < 4; i++) {
+        const phase = time * 3.5 + i * 1.5;
+        const breath = 1.0 + Math.sin(phase) * 0.35;
+        const flicker = (Math.sin(phase * 11) * Math.cos(phase * 7) > 0.2) ? 0.75 : 1.15;
+        const randomDrop = Math.random() > 0.985 ? 0.4 : 1.0;
+        const modulation = breath * flicker * randomDrop;
+
+        sharedAssets.materials.rooms[0].primaryIndicatorMatGroup[i].emissiveIntensity = 8.0 * modulation;
+        sharedAssets.materials.rooms[0].redDotMatGroup[i].emissiveIntensity = 9.0 * modulation;
+        sharedAssets.materials.rooms[0].secondaryCableMatGroup[i].emissiveIntensity = 8.0 * modulation;
+        sharedAssets.materials.rooms[0].secondaryGlowMatGroup[i].emissiveIntensity = 12.0 * modulation;
+        sharedAssets.materials.rooms[0].primaryGlowMatGroup[i].emissiveIntensity = 12.0 * modulation;
       }
 
-      if (isVisible) {
-        const factor = Math.max(0, 1 - dx / 12.0);
-        const roomLights = lightRefs.current[r];
-        const roomPanels = panelRefs.current[r];
+      // Room 1 (Home) sequential light ignition on scroll
+      const trigger = ScrollTrigger.getById("globalScroll");
+      const p = trigger ? trigger.progress : 0;
+      const zoomP = Math.min(1.0, p / 0.01);
 
-        // Flicker indicator lights for this room:
-        for (let i = 0; i < 4; i++) {
-          const phase = time * 3.5 + i * 1.5 + r * 2.0;
-          const breath = 1.0 + Math.sin(phase) * 0.35;
-          const flicker = (Math.sin(phase * 11) * Math.cos(phase * 7) > 0.2) ? 0.75 : 1.15;
-          const randomDrop = Math.random() > 0.985 ? 0.4 : 1.0;
-          const modulation = breath * flicker * randomDrop;
+      // Update the 12 ceiling panels
+      for (let index = 0; index < 12; index++) {
+        const zOrder = Math.floor(index / 2); // row index 0 to 5
+        const rowStart = (5 - zOrder) * 0.15;
+        const rowEnd = rowStart + 0.25;
+        const rowP = Math.min(1.0, Math.max(0.0, (zoomP - rowStart) / (rowEnd - rowStart)));
+        const opacityVal = rowP * factor;
 
-          sharedAssets.materials.rooms[r].primaryIndicatorMatGroup[i].emissiveIntensity = 8.0 * modulation;
-          sharedAssets.materials.rooms[r].redDotMatGroup[i].emissiveIntensity = 9.0 * modulation;
-          sharedAssets.materials.rooms[r].secondaryCableMatGroup[i].emissiveIntensity = 8.0 * modulation;
-          sharedAssets.materials.rooms[r].secondaryGlowMatGroup[i].emissiveIntensity = 12.0 * modulation;
-          sharedAssets.materials.rooms[r].primaryGlowMatGroup[i].emissiveIntensity = 12.0 * modulation;
+        if (roomPanels && roomPanels[index] && roomPanels[index].material) {
+          roomPanels[index].material.opacity = opacityVal;
         }
+      }
 
-        if (r === 0) {
-          // Room 1 (Home) sequential light ignition on scroll
-          const trigger = ScrollTrigger.getById("globalScroll");
-          const p = trigger ? trigger.progress : 0;
-          const zoomP = Math.min(1.0, p / 0.01);
-
-          // Update the 12 ceiling panels
-          for (let index = 0; index < 12; index++) {
-            const zOrder = Math.floor(index / 2); // row index 0 to 5
-            const rowStart = (5 - zOrder) * 0.15;
-            const rowEnd = rowStart + 0.25;
-            const rowP = Math.min(1.0, Math.max(0.0, (zoomP - rowStart) / (rowEnd - rowStart)));
-            const opacityVal = rowP * factor;
-
-            if (roomPanels && roomPanels[index] && roomPanels[index].material) {
-              roomPanels[index].material.opacity = opacityVal;
-            }
-          }
-
-          // Update the 2 point lights sequentially
-          if (roomLights) {
-            // Light 1 (back): lights up first as zoomP goes from 0 to 0.6
-            const backP = Math.min(1.0, Math.max(0.0, zoomP / 0.6));
-            if (roomLights[1]) {
-              roomLights[1].intensity = 18.0 * backP * factor;
-            }
-            // Light 0 (front): lights up second as zoomP goes from 0.4 to 1.0
-            const frontP = Math.min(1.0, Math.max(0.0, (zoomP - 0.4) / 0.6));
-            if (roomLights[0]) {
-              roomLights[0].intensity = 18.0 * frontP * factor;
-            }
-          }
-        } else {
-          // Other rooms: simple fade in/out based on camera distance
-          for (let index = 0; index < 12; index++) {
-            const opacityVal = factor;
-            if (roomPanels && roomPanels[index] && roomPanels[index].material) {
-              roomPanels[index].material.opacity = opacityVal;
-            }
-          }
-          if (roomLights) {
-            if (roomLights[0]) roomLights[0].intensity = 18.0 * factor;
-            if (roomLights[1]) roomLights[1].intensity = 18.0 * factor;
-          }
+      // Update the 2 point lights sequentially
+      if (roomLights) {
+        // Light 1 (back): lights up first as zoomP goes from 0 to 0.6
+        const backP = Math.min(1.0, Math.max(0.0, zoomP / 0.6));
+        if (roomLights[1]) {
+          roomLights[1].intensity = 18.0 * backP * factor;
+        }
+        // Light 0 (front): lights up second as zoomP goes from 0.4 to 1.0
+        const frontP = Math.min(1.0, Math.max(0.0, (zoomP - 0.4) / 0.6));
+        if (roomLights[0]) {
+          roomLights[0].intensity = 18.0 * frontP * factor;
         }
       }
     }
@@ -592,8 +579,8 @@ function SceneController({ isReady, sharedAssets }) {
   return (
     <>
       {/* ⚠️ HIGH AESTHETIC: Real Mirror Reflector Floor for glowing orange reflection */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[22.5, 0, 0]}>
-        <planeGeometry args={[160, 100]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
+        <planeGeometry args={[35, 80]} />
         <MeshReflectorMaterial
           blur={[300, 100]}
           resolution={256}
@@ -609,8 +596,8 @@ function SceneController({ isReady, sharedAssets }) {
       </mesh>
 
       {/* Ceiling */}
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[22.5, 4.5, 0]}>
-        <planeGeometry args={[160, 100]} />
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 4.5, 0]}>
+        <planeGeometry args={[35, 80]} />
         <meshStandardMaterial 
           color="#050507"
           roughness={0.5}
@@ -618,23 +605,19 @@ function SceneController({ isReady, sharedAssets }) {
         />
       </mesh>
 
-      {/* Rooms */}
-      {Array.from({ length: 4 }).map((_, r) => (
-        <group key={`room-${r}`} ref={(el) => (roomGroupsRef.current[r] = el)}>
-          <HangarRoom
-            roomIdx={r}
-            roomX={r * 15}
-            sharedAssets={sharedAssets}
-            lightRefs={lightRefs}
-            panelRefs={panelRefs}
-          />
-        </group>
-      ))}
+      {/* Rooms - Render Room 0 Only */}
+      <group ref={(el) => (roomGroupsRef.current[0] = el)}>
+        <HangarRoom
+          roomIdx={0}
+          roomX={0}
+          sharedAssets={sharedAssets}
+          lightRefs={lightRefs}
+          panelRefs={panelRefs}
+        />
+      </group>
 
-      {/* Partition Walls between rooms */}
+      {/* Partition Walls between rooms - Render Wall 7.5 Only */}
       <PartitionWall boundaryX={7.5} sharedAssets={sharedAssets} />
-      <PartitionWall boundaryX={22.5} sharedAssets={sharedAssets} />
-      <PartitionWall boundaryX={37.5} sharedAssets={sharedAssets} />
     </>
   );
 }
@@ -670,8 +653,8 @@ export default function ServerHangarCanvas({ isReady = true, isActive = true }) 
     const panelLongGlowBox = new THREE.BoxGeometry(0.025, 0.005, 3.5);
     const panelTransGlowBox = new THREE.BoxGeometry(0.92, 0.005, 0.025);
 
-    // Dynamic Rooms Materials (4 rooms, each with primary and secondary color combinations)
-    const rooms = Array.from({ length: 4 }, (_, r) => {
+    // Dynamic Rooms Materials (1 room, orange color combinations)
+    const rooms = Array.from({ length: 1 }, (_, r) => {
       const primaryColors = ["#00e5ff", "#d500f9", "#00e676", "#ff3d00"];
       const primaryEmissives = ["#00b0ff", "#b000e6", "#00c853", "#dd2c00"];
       

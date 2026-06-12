@@ -165,3 +165,19 @@ html.lenis, html.lenis body {
 .glitch-hover:hover {
   animation: textGlitch 0.3s steps(2, start) infinite;
 }
+
+/* 明日方舟战术终端滚动条定制 */
+.terminal-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.terminal-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.4);
+}
+.terminal-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 240, 255, 0.3);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+}
+.terminal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.75);
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+}

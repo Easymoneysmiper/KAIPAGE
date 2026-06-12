@@ -160,14 +160,34 @@ const CATEGORIES = [
   { id: 'life', name: '生活' }
 ];
 
-export default function OriginiumSharing({ isActive = false }) {
+export default function OriginiumSharing({ isActive = false, onModalToggle }) {
   const videoRef = useRef(null);
+  const modalVideoRef = useRef(null);
   const [videoReady, setVideoReady] = useState(false);
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedPost, setSelectedPost] = useState(MOCK_POSTS[0]);
   const [showModal, setShowModal] = useState(false);
   const [readProgress, setReadProgress] = useState(0);
   const articleContainerRef = useRef(null);
+
+  // Handle playback of the modal background video
+  useEffect(() => {
+    if (showModal && modalVideoRef.current) {
+      modalVideoRef.current.load();
+      modalVideoRef.current.play().catch((err) => {
+        console.warn("Modal video playback failed:", err);
+      });
+    }
+  }, [showModal, selectedPost.category]);
+
+  // Safety cleanup: ensure Lenis scroll is always restored when switching pages or unmounting
+  useEffect(() => {
+    return () => {
+      if (onModalToggle) {
+        onModalToggle(false);
+      }
+    };
+  }, [isActive, onModalToggle]);
 
   // Control video playback based on page visibility
   useEffect(() => {
@@ -354,6 +374,7 @@ export default function OriginiumSharing({ isActive = false }) {
   // Start / restart the 3.5-second auto-cycle interval
   const startAutoCycle = () => {
     if (autoCycleRef.current) clearInterval(autoCycleRef.current);
+    if (showModal) return; // Block rotation if detail modal is open
     autoCycleRef.current = setInterval(cycleToNext, 3500);
   };
 
@@ -369,13 +390,24 @@ export default function OriginiumSharing({ isActive = false }) {
   };
 
   useEffect(() => {
-    startAutoCycle();
+    if (showModal) {
+      if (autoCycleRef.current) {
+        clearInterval(autoCycleRef.current);
+        autoCycleRef.current = null;
+      }
+      if (resumeTimerRef.current) {
+        clearTimeout(resumeTimerRef.current);
+        resumeTimerRef.current = null;
+      }
+    } else {
+      startAutoCycle();
+    }
     return () => {
       if (autoCycleRef.current) clearInterval(autoCycleRef.current);
       if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeCategory]);
+  }, [activeCategory, showModal]);
 
   // Sync selectedPost when category changes – reset cycle
   const handleCategoryChange = (catId) => {
@@ -400,6 +432,7 @@ export default function OriginiumSharing({ isActive = false }) {
   const handleOpenModal = () => {
     setReadProgress(0);
     setShowModal(true);
+    if (onModalToggle) onModalToggle(true);
   };
 
   // Helper to select post via clicking on progress bar
@@ -508,7 +541,7 @@ export default function OriginiumSharing({ isActive = false }) {
       {/* ============ VIDEO BACKGROUND ============ */}
       <video
         ref={videoRef}
-        src="/world-bg-compressed.mp4"
+        src="/world-bg.webm"
         muted
         loop
         playsInline
@@ -614,7 +647,7 @@ export default function OriginiumSharing({ isActive = false }) {
       </div>
 
       {/* ==================== LEFT COLUMN: LIST AND SELECTED DESCRIPTION ==================== */}
-      <div className="w-full lg:w-[32%] flex flex-col justify-between h-full pr-0 lg:pr-8 border-r-0 lg:border-r border-white/10 z-20 gap-6 animate-world-left">
+      <div className="w-full lg:w-[32%] flex flex-col justify-between h-full pr-0 lg:pr-8 border-r-0 lg:border-r border-white/10 z-20 gap-6">
         
         {/* Upper part: Tabs & List */}
         <div className="flex flex-col flex-1 overflow-hidden">
@@ -731,7 +764,7 @@ export default function OriginiumSharing({ isActive = false }) {
       </div>
 
       {/* ==================== MIDDLE COLUMN: MAIN VISUAL IMAGE & SLIDER ==================== */}
-      <div className="flex-1 flex flex-col justify-center h-full pl-0 lg:pl-10 mt-8 lg:mt-0 z-20 gap-4 animate-world-right">
+      <div className="flex-1 flex flex-col justify-center h-full pl-0 lg:pl-40 mt-8 lg:mt-0 z-20 gap-4">
         
         {/* Large featured graphic */}
         <div className="w-full aspect-[16/10] bg-[#070709] border border-white/10 rounded-sm relative overflow-hidden flex items-center justify-center shadow-[inset_0_0_25px_rgba(0,0,0,0.9)] group">
@@ -866,7 +899,7 @@ export default function OriginiumSharing({ isActive = false }) {
       </div>
 
       {/* ==================== RIGHT COLUMN: VERTICAL DISPLAY INDEX ==================== */}
-      <div className="hidden lg:flex w-[10%] h-full flex-col items-center justify-center border-l border-white/10 pl-6 relative select-none z-20 animate-world-index">
+      <div className="hidden lg:flex w-[10%] h-full flex-col items-center justify-center border-l border-white/10 pl-6 relative select-none z-20">
         
         {/* Halftone grid matrix background */}
         <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:10px_10px] opacity-40 -z-10" />
@@ -902,15 +935,30 @@ export default function OriginiumSharing({ isActive = false }) {
 
       {/* ==================== TACTICAL TERMINAL modal (READING CONSOLE) ==================== */}
       {showModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 backdrop-blur-md p-4 md:p-8">
-          <div className="relative w-full max-w-7xl h-[88vh] bg-[#070709] border border-white/10 flex flex-col md:flex-row overflow-hidden rounded-[1px] shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-modal-in ark-scanline">
-            
+        <div data-lenis-prevent className="sharing-modal-container fixed inset-0 z-[9999] flex items-center justify-center bg-[#070709] p-4 md:p-8 overflow-hidden">
+          
+          {/* Background video overlay - Span across the ENTIRE PAGE viewport */}
+          <video
+            ref={modalVideoRef}
+            key={selectedPost.category}
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-[0.25] z-0"
+            src={selectedPost.category === 'tech' ? "/tech_bg.webm" : "/life_bg.webm"}
+            loop
+            muted
+            playsInline
+          />
+
+          <div className="relative w-full max-w-7xl h-[88vh] bg-[#070709]/80 backdrop-blur-lg border border-white/10 flex flex-col md:flex-row overflow-hidden rounded-[1px] shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-modal-in ark-scanline z-10">
+
             {/* Top decorative banner */}
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-ark-cyan shadow-[0_0_8px_#00f0ff] z-40" />
 
             {/* Close button (top right) */}
             <button
-              onClick={() => setShowModal(false)}
+              onClick={() => {
+                setShowModal(false);
+                if (onModalToggle) onModalToggle(false);
+              }}
               className="absolute top-5 right-5 px-3.5 py-1.5 border border-ark-red/40 hover:bg-ark-red/20 text-ark-red hover:text-white text-[9px] font-mono font-bold uppercase transition-all duration-300 cursor-pointer flex items-center gap-1.5 shadow-[0_0_8px_rgba(255,62,62,0.1)] hover:shadow-[0_0_15px_rgba(255,62,62,0.3)] z-50 rounded-[1px]"
             >
               <span>[X]</span>
@@ -918,7 +966,7 @@ export default function OriginiumSharing({ isActive = false }) {
             </button>
 
             {/* 1. Modal Sidebar: Metadata (30% width) */}
-            <div className="w-full md:w-[28%] border-b md:border-b-0 md:border-r border-white/10 p-6 flex flex-col justify-between pt-12 gap-8 bg-[#0A0A0C]">
+            <div className="w-full md:w-[28%] border-b md:border-b-0 md:border-r border-white/10 p-6 flex flex-col justify-between pt-12 gap-8 bg-[#0A0A0C]/85 backdrop-blur-sm z-10">
               
               {/* Top metadata display */}
               <div className="flex flex-col gap-5 text-[10px] font-mono">
@@ -984,13 +1032,13 @@ export default function OriginiumSharing({ isActive = false }) {
             </div>
 
             {/* 2. Modal Body: Scrollable Article Content (72% width) */}
-            <div className="flex-1 flex flex-col justify-between overflow-hidden relative">
+            <div className="flex-1 flex flex-col justify-between overflow-hidden relative z-10">
               
               {/* Scrollable text container */}
               <div
                 ref={articleContainerRef}
                 onScroll={handleArticleScroll}
-                className="flex-1 overflow-y-auto px-6 md:px-12 py-10 pt-16 md:pt-14 scrollbar-thin select-text text-justify"
+                className="flex-1 overflow-y-auto px-6 md:px-12 py-10 pt-16 md:pt-14 terminal-scrollbar select-text text-justify"
               >
                 {/* Article Header info */}
                 <div className="border-b border-white/10 pb-6 mb-8">

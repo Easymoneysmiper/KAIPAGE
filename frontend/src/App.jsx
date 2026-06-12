@@ -3,7 +3,6 @@ import HudHeader from './HudHeader';
 import ServerHangarCanvas from './ServerHangarCanvas';
 import OperatorProfile from './OperatorProfile';
 import OriginiumSharing from './OriginiumSharing';
-import ProjectDesk from './ProjectDesk';
 
 // Text animations for Hero
 import SplitText from './SplitText';
@@ -22,7 +21,6 @@ const navItems = [
   { label: "01 INDEX", href: "#hero" },
   { label: "02 OPERATOR", href: "#operator" },
   { label: "03 WORLD", href: "#world" },
-  { label: "04 PROJECTS", href: "#projects" },
 ];
 
 export default function App() {
@@ -39,6 +37,7 @@ export default function App() {
   const currentPageStateRef = useRef(0);
   const lastDirectionRef = useRef(0);
   const lastTransitionTimeRef = useRef(0);
+  const lastWheelTimeRef = useRef(0);
   const wheelEndTimeoutRef = useRef(null);
 
   // Initialize smooth scrolling
@@ -69,11 +68,12 @@ export default function App() {
   useGSAP(() => {
     const horizontalTween = gsap.timeline({
       scrollTrigger: {
+        id: 'horizontalScrollTrigger',
         trigger: '.horizontal-scroll-container',
         pin: true,
-        scrub: 0.15,
+        scrub: 0.08,
         start: 'top top',
-        end: () => `+=${window.innerWidth * 4}`, // Total scroll distance is 4 viewports wide
+        end: () => `+=${window.innerWidth * 3}`, // Total scroll distance is 3 viewports wide
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           const progress = self.progress;
@@ -83,139 +83,104 @@ export default function App() {
             if (progress <= 0.01) {
               hangarContainerRef.current.style.opacity = '1';
               hangarContainerRef.current.style.visibility = 'visible';
-            } else if (progress >= 0.11) {
+            } else if (progress >= 0.45) {
               hangarContainerRef.current.style.opacity = '0';
               hangarContainerRef.current.style.visibility = 'hidden';
             } else {
-              const ratio = (progress - 0.01) / 0.1;
+              const ratio = (progress - 0.01) / 0.44;
               hangarContainerRef.current.style.opacity = String(1 - ratio);
               hangarContainerRef.current.style.visibility = 'visible';
             }
           }
 
-          // Toggle Canvas rendering loop active state (only active when visible, i.e., progress < 0.11)
-          const active = progress < 0.11;
+          // Toggle Canvas rendering loop active state (only active when visible, i.e., progress < 0.45)
+          const active = progress < 0.45;
           setIsCanvasActive((prev) => (prev !== active ? active : prev));
 
           // Calculate current page state index:
           // state 0: Hero Zoomed Out [0, 0.005)
-          // state 1: Hero Zoomed In [0.005, 0.175)
-          // state 2: Operator [0.175, 0.505)
-          // state 3: World [0.505, 0.835)
-          // state 4: Projects [0.835, 1.0]
+          // state 1: Hero Zoomed In [0.005, 0.1)
+          // state 2: Operator [0.1, 0.52)
+          // state 3: World [0.52, 1.0]
           let stateIdx;
           if (progress < 0.005) {
             stateIdx = 0;
-          } else if (progress < 0.175) {
+          } else if (progress < 0.1) {
             stateIdx = 1;
-          } else if (progress < 0.505) {
+          } else if (progress < 0.52) {
             stateIdx = 2;
-          } else if (progress < 0.835) {
-            stateIdx = 3;
           } else {
-            stateIdx = 4;
+            stateIdx = 3;
           }
           currentPageStateRef.current = stateIdx;
 
-          // Map stateIdx to activeNavIndex (0, 1, 2, 3)
+          // Map stateIdx to activeNavIndex (0, 1, 2)
           let index = 0;
           if (stateIdx === 0 || stateIdx === 1) index = 0;
           else if (stateIdx === 2) index = 1;
           else if (stateIdx === 3) index = 2;
-          else if (stateIdx === 4) index = 3;
           setActiveNavIndex(index);
         }
       }
     });
 
-    // Set initial positions: stacked centered but fully clipped to the right with tilted polygons
-    gsap.set('.operator-section', { clipPath: 'polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)', x: 0, opacity: 1 });
-    gsap.set('.world-section', { clipPath: 'polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)', x: 0, opacity: 1 });
-    gsap.set('.projects-section', { clipPath: 'polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)', x: 0, opacity: 1 });
-    
-    // Set initial positions for dual-swipe lines:
-    gsap.set('#wipe-line-main', { x: '100vw', opacity: 0 });
-    gsap.set('#wipe-line-accent', { x: '100vw', opacity: 0 });
+    // Set initial positions: stacked centered but fully translated to the right (use transform instead of clipPath for GPU acceleration)
+    gsap.set('.operator-section', { x: '100vw', opacity: 1 });
+    gsap.set('.world-section', { x: '100vw', opacity: 1 });
+    gsap.set('#wipe-line', { x: '100vw', opacity: 0 });
+    gsap.set('.animate-profile-card', { x: -80, opacity: 0 });
 
-    // Set initial layout states for page sub-elements (offset and transparent)
-    gsap.set('.animate-profile-card', { x: -60, opacity: 0 });
-    gsap.set('.animate-profile-artwork', { x: 60, opacity: 0 });
-    
-    gsap.set('.animate-world-left', { x: -60, opacity: 0 });
-    gsap.set('.animate-world-right', { y: 60, opacity: 0 });
-    gsap.set('.animate-world-index', { x: 40, opacity: 0 });
-    
-    gsap.set('.animate-project-left', { x: -60, opacity: 0 });
-    gsap.set('.animate-project-right', { x: 60, opacity: 0 });
-
-    // Phase 1: Camera zoom-in phase (Progress 0.0 to 0.01).
+    // Phase 1: Camera zoom-in phase (Progress 0.0 to 0.015).
     horizontalTween.to({}, { duration: 0.03 });
 
     // Phase 2: Operator page covers Hero page
     horizontalTween.addLabel('operator')
-                  .to(['#wipe-line-main', '#wipe-line-accent'], { opacity: 1, duration: 0.05 }, 'operator')
-                  .to('.operator-section', { clipPath: 'polygon(-20% 0%, 100% 0%, 100% 100%, 0% 100%)', ease: 'none', duration: 0.99 }, 'operator')
-                  .to('#wipe-line-main', { x: 0, ease: 'none', duration: 0.99 }, 'operator')
-                  .to('#wipe-line-accent', { x: '-3vw', ease: 'none', duration: 0.99 }, 'operator')
-                  .to('.hero-section', { opacity: 0, scale: 0.92, x: '-20vw', ease: 'none', duration: 0.99 }, 'operator')
-                  .to(['#wipe-line-main', '#wipe-line-accent'], { opacity: 0, duration: 0.05 }, 'operator+=0.94')
-                  // Slide-in child elements as Operator page enters
-                  .to('.animate-profile-card', { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'operator+=0.4')
-                  .to('.animate-profile-artwork', { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'operator+=0.4');
+                  .to('#wipe-line', { opacity: 1, duration: 0.05 }, 'operator')
+                  .to('.operator-section', { x: 0, ease: 'none', duration: 0.99 }, 'operator')
+                  .to('#wipe-line', { x: 0, ease: 'none', duration: 0.99 }, 'operator')
+                  .to('.hero-section', { opacity: 0, x: '-15vw', ease: 'none', duration: 0.99 }, 'operator')
+                  .to('#wipe-line', { opacity: 0, duration: 0.05 }, 'operator+=0.94')
+                  // Fade/slide-in profile card as Operator page enters
+                  .to('.animate-profile-card', { x: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, 'operator+=0.5');
 
     // Phase 3: World page covers Operator page
     horizontalTween.addLabel('world', 'operator+=0.99')
-                  .set('#wipe-line-main', { x: '100vw', opacity: 0 }, 'world')
-                  .set('#wipe-line-accent', { x: '100vw', opacity: 0 }, 'world')
-                  .to(['#wipe-line-main', '#wipe-line-accent'], { opacity: 1, duration: 0.05 }, 'world+=0.01')
-                  .to('.world-section', { clipPath: 'polygon(-20% 0%, 100% 0%, 100% 100%, 0% 100%)', ease: 'none', duration: 0.99 }, 'world')
-                  .to('#wipe-line-main', { x: 0, ease: 'none', duration: 0.99 }, 'world')
-                  .to('#wipe-line-accent', { x: '-3vw', ease: 'none', duration: 0.99 }, 'world')
-                  .to('.operator-section', { opacity: 0, scale: 0.92, x: '-20vw', ease: 'none', duration: 0.99 }, 'world')
-                  .to(['#wipe-line-main', '#wipe-line-accent'], { opacity: 0, duration: 0.05 }, 'world+=0.94')
-                  // Slide-in child elements as World page enters
-                  .to('.animate-world-left', { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'world+=0.4')
-                  .to('.animate-world-right', { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'world+=0.4')
-                  .to('.animate-world-index', { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'world+=0.4');
-
-    // Phase 4: Projects page covers World page
-    horizontalTween.addLabel('projects', 'world+=0.99')
-                  .set('#wipe-line-main', { x: '100vw', opacity: 0 }, 'projects')
-                  .set('#wipe-line-accent', { x: '100vw', opacity: 0 }, 'projects')
-                  .to(['#wipe-line-main', '#wipe-line-accent'], { opacity: 1, duration: 0.05 }, 'projects+=0.01')
-                  .to('.projects-section', { clipPath: 'polygon(-20% 0%, 100% 0%, 100% 100%, 0% 100%)', ease: 'none', duration: 0.99 }, 'projects')
-                  .to('#wipe-line-main', { x: 0, ease: 'none', duration: 0.99 }, 'projects')
-                  .to('#wipe-line-accent', { x: '-3vw', ease: 'none', duration: 0.99 }, 'projects')
-                  .to('.world-section', { opacity: 0, scale: 0.92, x: '-20vw', ease: 'none', duration: 0.99 }, 'projects')
-                  .to(['#wipe-line-main', '#wipe-line-accent'], { opacity: 0, duration: 0.05 }, 'projects+=0.94')
-                  // Slide-in child elements as Projects page enters
-                  .to('.animate-project-left', { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'projects+=0.4')
-                  .to('.animate-project-right', { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'projects+=0.4');
+                  .set('#wipe-line', { x: '100vw', opacity: 0 }, 'world')
+                  .to('#wipe-line', { opacity: 1, duration: 0.05 }, 'world+=0.01')
+                  .to('.world-section', { x: 0, ease: 'none', duration: 0.99 }, 'world')
+                  .to('#wipe-line', { x: 0, ease: 'none', duration: 0.99 }, 'world')
+                  .to('.operator-section', { x: '-15vw', ease: 'none', duration: 0.99 }, 'world')
+                  .to('#wipe-line', { opacity: 0, duration: 0.05 }, 'world+=0.94');
 
   }, []);
 
   const handleStateChange = (stateIdx) => {
     if (lenisRef.current) {
-      const H = window.innerWidth * 4;
+      const H = window.innerWidth * 3;
       let targetProgress = 0;
       if (stateIdx === 0) targetProgress = 0.0;
-      else if (stateIdx === 1) targetProgress = 0.01;
-      else if (stateIdx === 2) targetProgress = 0.34; // End of zoom + centered Operator
-      else if (stateIdx === 3) targetProgress = 0.67; // Centered World
-      else if (stateIdx === 4) targetProgress = 1.0;  // Centered Projects
+      else if (stateIdx === 1) targetProgress = 0.015;
+      else if (stateIdx === 2) targetProgress = 1.02 / 2.01; // Operator page
+      else if (stateIdx === 3) targetProgress = 1.0; // World page
       
       // Map stateIdx to activeNavIndex
       let index = 0;
       if (stateIdx === 0 || stateIdx === 1) index = 0;
       else if (stateIdx === 2) index = 1;
       else if (stateIdx === 3) index = 2;
-      else if (stateIdx === 4) index = 3;
       setActiveNavIndex(index);
+
+      // Snappier transition when traveling the corridor between Operator (state 2) and Hero Zoomed In (state 1)
+      const currentState = currentPageStateRef.current;
+      const isCorridor = (currentState === 2 && stateIdx === 1) || (currentState === 1 && stateIdx === 2);
+      
+      const duration = isCorridor ? 0.45 : 0.6;
+      const lockDelay = isCorridor ? 500 : 650;
 
       isScrollingRef.current = true;
       lastTransitionTimeRef.current = Date.now();
       lenisRef.current.scrollTo(targetProgress * H, { 
-        duration: 0.85,
+        duration: duration,
         easing: (t) => t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
       });
       
@@ -223,7 +188,7 @@ export default function App() {
       wheelEndTimeoutRef.current = setTimeout(() => {
         isScrollingRef.current = false;
         lastDirectionRef.current = 0;
-      }, 900);
+      }, lockDelay);
     }
   };
 
@@ -233,7 +198,6 @@ export default function App() {
     if (index === 0) targetState = 0; // Go to zoomed out
     else if (index === 1) targetState = 2; // Go to Operator
     else if (index === 2) targetState = 3; // Go to World
-    else if (index === 3) targetState = 4; // Go to Projects
     
     handleStateChange(targetState);
   };
@@ -257,6 +221,12 @@ export default function App() {
     };
 
     const handleWheel = (e) => {
+      // Intercept and stop event propagation if the sharing detail modal is active
+      if (document.querySelector('.sharing-modal-container')) {
+        e.stopPropagation();
+        return;
+      }
+
       // Allow standard scrolling inside active list items or details modal
       if (isInsideScrollable(e.target)) {
         return;
@@ -268,34 +238,29 @@ export default function App() {
         e.stopImmediatePropagation();
       }
 
+      const now = Date.now();
       const delta = e.deltaY;
+      const timeSinceLastWheel = now - lastWheelTimeRef.current;
+      lastWheelTimeRef.current = now;
+
       if (Math.abs(delta) < 15) return; // filter minor noise
 
       const direction = delta > 0 ? 1 : -1;
       const dirChanged = lastDirectionRef.current !== 0 && direction !== lastDirectionRef.current;
+      const timeSinceTransition = now - lastTransitionTimeRef.current;
+      const currentState = currentPageStateRef.current;
 
       // 1. If currently in transition animation
       if (isScrollingRef.current) {
-        if (!dirChanged) {
-          // If scrolling in the same direction, extend the lock dynamically
-          lastDirectionRef.current = direction;
-          clearTimeout(wheelEndTimeoutRef.current);
-          const timeSinceTransition = Date.now() - lastTransitionTimeRef.current;
-          const extendDelay = Math.max(900 - timeSinceTransition, 300); // Minimum lock of 900ms, or 300ms since last event
-          wheelEndTimeoutRef.current = setTimeout(() => {
-            isScrollingRef.current = false;
-            lastDirectionRef.current = 0;
-          }, extendDelay);
-        } else {
-          // If direction changed, immediately trigger transition in the opposite direction
+        if (dirChanged) {
+          // If direction changed, immediately interrupt transition and trigger opposite direction
           isScrollingRef.current = false;
           lastDirectionRef.current = direction;
           
-          const currentState = currentPageStateRef.current;
           let nextState = currentState;
 
           if (direction > 0) {
-            if (currentState < 4) nextState = currentState + 1;
+            if (currentState < 3) nextState = currentState + 1;
           } else {
             if (currentState > 0) nextState = currentState - 1;
           }
@@ -307,14 +272,25 @@ export default function App() {
         return;
       }
 
-      // 2. If not scrolling, trigger the transition
+      // 2. Absolute cooldown (shorter 450ms when going through the corridor, otherwise 600ms)
+      const isCorridor = (currentState === 2 && direction < 0) || (currentState === 1 && direction > 0);
+      const cooldown = isCorridor ? 450 : 600;
+      if (timeSinceTransition < cooldown) {
+        return;
+      }
+
+      // 3. Gesture-end filter: if same direction, require at least 150ms pause between scroll gestures
+      if (!dirChanged && timeSinceLastWheel < 150) {
+        return;
+      }
+
+      // Trigger the transition
       lastDirectionRef.current = direction;
 
-      const currentState = currentPageStateRef.current;
       let nextState = currentState;
 
       if (delta > 0) {
-        if (currentState < 4) nextState = currentState + 1;
+        if (currentState < 3) nextState = currentState + 1;
       } else {
         if (currentState > 0) nextState = currentState - 1;
       }
@@ -325,6 +301,11 @@ export default function App() {
     };
 
     const handleKeyDown = (e) => {
+      // Allow keyboard navigation in article reading modal
+      if (document.querySelector('.sharing-modal-container')) {
+        return;
+      }
+
       const activeElement = document.activeElement;
       if (activeElement && (activeElement.tagName === 'INPUT' || activeElement.tagName === 'TEXTAREA')) {
         return;
@@ -340,16 +321,22 @@ export default function App() {
         let nextState = currentState;
 
         if (e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ' || e.key === 'Space') {
-          if (currentState < 4) nextState = currentState + 1;
+          if (currentState < 3) nextState = currentState + 1;
         } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
           if (currentState > 0) nextState = currentState - 1;
         } else if (e.key === 'Home') {
           nextState = 0;
         } else if (e.key === 'End') {
-          nextState = 4;
+          nextState = 3;
         }
 
         if (nextState !== currentState) {
+          const now = Date.now();
+          const timeSinceTransition = now - lastTransitionTimeRef.current;
+          const isCorridor = (currentState === 2 && nextState === 1) || (currentState === 1 && nextState === 2);
+          const cooldown = isCorridor ? 450 : 600;
+          if (timeSinceTransition < cooldown) return; // Keyboard absolute cooldown
+
           handleStateChange(nextState);
         }
       }
@@ -513,18 +500,11 @@ export default function App() {
       {/* Main Pages Container (Stacked Absolute Layout) */}
       <div className="horizontal-scroll-container relative z-10 w-full h-screen overflow-hidden">
         
-        {/* Wipe dividing line boundary - Dual Accent Lines */}
-        {/* Main Cyan Glowing Line */}
+        {/* Wipe dividing line boundary */}
         <div 
-          id="wipe-line-main"
-          className="absolute top-0 bottom-0 w-[4px] bg-ark-cyan shadow-[0_0_25px_rgba(0,240,255,0.85),_0_0_10px_#00f0ff] z-[99] pointer-events-none"
-          style={{ transform: 'translateX(100vw) skewX(-18deg)', transformOrigin: 'bottom left', opacity: 0 }}
-        />
-        {/* Secondary Green Accent Line */}
-        <div 
-          id="wipe-line-accent"
-          className="absolute top-0 bottom-0 w-[1.5px] bg-ark-green shadow-[0_0_15px_rgba(166,246,38,0.85)] z-[99] pointer-events-none"
-          style={{ transform: 'translateX(100vw) skewX(-18deg)', transformOrigin: 'bottom left', opacity: 0 }}
+          id="wipe-line"
+          className="absolute top-0 bottom-0 w-[3px] bg-ark-cyan shadow-[0_0_15px_#00f0ff] z-[99] pointer-events-none"
+          style={{ transform: 'translateX(100vw)', opacity: 0 }}
         />
         
         {/* ==================== 1. HERO INDEX PAGE ==================== */}
@@ -625,19 +605,25 @@ export default function App() {
         </section>
 
         {/* ==================== 2. OPERATOR BIO PAGE ==================== */}
-        <section id="operator" className="operator-section absolute inset-0 w-full h-screen overflow-y-auto z-20 bg-[#0A0A0C]">
-          <OperatorProfile />
+        <section id="operator" className="operator-section absolute inset-0 w-full h-screen overflow-hidden z-20 bg-[#0A0A0C]">
+          <OperatorProfile isActive={activeNavIndex === 1} />
         </section>
 
         {/* ==================== 3. WORLD BLOG/SHARING PAGE ==================== */}
         <section id="world" className="world-section absolute inset-0 w-full h-screen overflow-y-auto z-30 bg-[#0A0A0C]">
-          <OriginiumSharing isActive={activeNavIndex === 2} />
+          <OriginiumSharing 
+            isActive={activeNavIndex === 2} 
+            onModalToggle={(open) => {
+              if (open) {
+                lenisRef.current?.stop();
+              } else {
+                lenisRef.current?.start();
+              }
+            }}
+          />
         </section>
 
-        {/* ==================== 4. PROJECTS WORKSPACE PAGE ==================== */}
-        <section id="projects" className="projects-section absolute inset-0 w-full h-screen overflow-y-auto z-40 bg-[#0A0A0C]">
-          <ProjectDesk />
-        </section>
+
 
       </div>
     </div>
