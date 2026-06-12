@@ -74,7 +74,7 @@ export default function OperatorProfile() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch">
           
           {/* Left panel: Tactical Coder Stats Dossier (6 columns) */}
-          <div className="lg:col-span-6 flex flex-col justify-between p-6 md:p-8 bg-[#0F0F12]/90 border border-white/10 rounded-sm relative ark-border-box corner-tl">
+          <div className="lg:col-span-6 flex flex-col justify-between p-6 md:p-8 bg-[#0F0F12]/90 border border-white/10 rounded-sm relative ark-border-box corner-tl animate-profile-card">
             
             {/* Header info */}
             <div>
@@ -222,7 +222,7 @@ export default function OperatorProfile() {
           </div>
 
           {/* Right panel: Giant artwork illustration frame (6 columns) */}
-          <div className="lg:col-span-6 flex flex-col justify-center items-center relative min-h-[400px] lg:min-h-0 bg-[#070709] border border-white/10 rounded-sm overflow-hidden group">
+          <div className="lg:col-span-6 flex flex-col justify-center items-center relative min-h-[400px] lg:min-h-0 bg-[#070709] border border-white/10 rounded-sm overflow-hidden group animate-profile-artwork">
             
             {/* Tech grid elements inside frame */}
             <div className="absolute inset-0 ark-grid pointer-events-none opacity-20" />

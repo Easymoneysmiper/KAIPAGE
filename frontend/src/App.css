@@ -34,4 +34,5 @@
   position: relative;
   overflow: hidden;
   background: transparent !important;
+  will-change: clip-path, transform, opacity;
 }

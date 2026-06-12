@@ -128,43 +128,69 @@ export default function App() {
       }
     });
 
-    // Set initial positions: stacked centered but fully clipped to the right
-    gsap.set('.operator-section', { clipPath: 'inset(0% 0% 0% 100%)', x: 0, opacity: 1 });
-    gsap.set('.world-section', { clipPath: 'inset(0% 0% 0% 100%)', x: 0, opacity: 1 });
-    gsap.set('.projects-section', { clipPath: 'inset(0% 0% 0% 100%)', x: 0, opacity: 1 });
-    gsap.set('#wipe-line', { x: '100vw', opacity: 0 });
-    gsap.set('.animate-profile-card', { x: -80, opacity: 0 });
+    // Set initial positions: stacked centered but fully clipped to the right with tilted polygons
+    gsap.set('.operator-section', { clipPath: 'polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)', x: 0, opacity: 1 });
+    gsap.set('.world-section', { clipPath: 'polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)', x: 0, opacity: 1 });
+    gsap.set('.projects-section', { clipPath: 'polygon(100% 0%, 100% 0%, 100% 100%, 100% 100%)', x: 0, opacity: 1 });
+    
+    // Set initial positions for dual-swipe lines:
+    gsap.set('#wipe-line-main', { x: '100vw', opacity: 0 });
+    gsap.set('#wipe-line-accent', { x: '100vw', opacity: 0 });
+
+    // Set initial layout states for page sub-elements (offset and transparent)
+    gsap.set('.animate-profile-card', { x: -60, opacity: 0 });
+    gsap.set('.animate-profile-artwork', { x: 60, opacity: 0 });
+    
+    gsap.set('.animate-world-left', { x: -60, opacity: 0 });
+    gsap.set('.animate-world-right', { y: 60, opacity: 0 });
+    gsap.set('.animate-world-index', { x: 40, opacity: 0 });
+    
+    gsap.set('.animate-project-left', { x: -60, opacity: 0 });
+    gsap.set('.animate-project-right', { x: 60, opacity: 0 });
 
     // Phase 1: Camera zoom-in phase (Progress 0.0 to 0.01).
     horizontalTween.to({}, { duration: 0.03 });
 
     // Phase 2: Operator page covers Hero page
     horizontalTween.addLabel('operator')
-                  .to('#wipe-line', { opacity: 1, duration: 0.05 }, 'operator')
-                  .to('.operator-section', { clipPath: 'inset(0% 0% 0% 0%)', ease: 'none', duration: 0.99 }, 'operator')
-                  .to('#wipe-line', { x: 0, ease: 'none', duration: 0.99 }, 'operator')
-                  .to('.hero-section', { opacity: 0.2, x: '-15vw', ease: 'none', duration: 0.99 }, 'operator')
-                  .to('#wipe-line', { opacity: 0, duration: 0.05 }, 'operator+=0.94')
-                  // Fade/slide-in profile card as Operator page enters
-                  .to('.animate-profile-card', { x: 0, opacity: 1, duration: 0.8, ease: 'power3.out' }, 'operator+=0.5');
+                  .to(['#wipe-line-main', '#wipe-line-accent'], { opacity: 1, duration: 0.05 }, 'operator')
+                  .to('.operator-section', { clipPath: 'polygon(-20% 0%, 100% 0%, 100% 100%, 0% 100%)', ease: 'none', duration: 0.99 }, 'operator')
+                  .to('#wipe-line-main', { x: 0, ease: 'none', duration: 0.99 }, 'operator')
+                  .to('#wipe-line-accent', { x: '-3vw', ease: 'none', duration: 0.99 }, 'operator')
+                  .to('.hero-section', { opacity: 0, scale: 0.92, x: '-20vw', ease: 'none', duration: 0.99 }, 'operator')
+                  .to(['#wipe-line-main', '#wipe-line-accent'], { opacity: 0, duration: 0.05 }, 'operator+=0.94')
+                  // Slide-in child elements as Operator page enters
+                  .to('.animate-profile-card', { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'operator+=0.4')
+                  .to('.animate-profile-artwork', { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'operator+=0.4');
 
     // Phase 3: World page covers Operator page
     horizontalTween.addLabel('world', 'operator+=0.99')
-                  .set('#wipe-line', { x: '100vw', opacity: 0 }, 'world')
-                  .to('#wipe-line', { opacity: 1, duration: 0.05 }, 'world+=0.01')
-                  .to('.world-section', { clipPath: 'inset(0% 0% 0% 0%)', ease: 'none', duration: 0.99 }, 'world')
-                  .to('#wipe-line', { x: 0, ease: 'none', duration: 0.99 }, 'world')
-                  .to('.operator-section', { opacity: 0.2, x: '-15vw', ease: 'none', duration: 0.99 }, 'world')
-                  .to('#wipe-line', { opacity: 0, duration: 0.05 }, 'world+=0.94');
+                  .set('#wipe-line-main', { x: '100vw', opacity: 0 }, 'world')
+                  .set('#wipe-line-accent', { x: '100vw', opacity: 0 }, 'world')
+                  .to(['#wipe-line-main', '#wipe-line-accent'], { opacity: 1, duration: 0.05 }, 'world+=0.01')
+                  .to('.world-section', { clipPath: 'polygon(-20% 0%, 100% 0%, 100% 100%, 0% 100%)', ease: 'none', duration: 0.99 }, 'world')
+                  .to('#wipe-line-main', { x: 0, ease: 'none', duration: 0.99 }, 'world')
+                  .to('#wipe-line-accent', { x: '-3vw', ease: 'none', duration: 0.99 }, 'world')
+                  .to('.operator-section', { opacity: 0, scale: 0.92, x: '-20vw', ease: 'none', duration: 0.99 }, 'world')
+                  .to(['#wipe-line-main', '#wipe-line-accent'], { opacity: 0, duration: 0.05 }, 'world+=0.94')
+                  // Slide-in child elements as World page enters
+                  .to('.animate-world-left', { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'world+=0.4')
+                  .to('.animate-world-right', { y: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'world+=0.4')
+                  .to('.animate-world-index', { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'world+=0.4');
 
     // Phase 4: Projects page covers World page
     horizontalTween.addLabel('projects', 'world+=0.99')
-                  .set('#wipe-line', { x: '100vw', opacity: 0 }, 'projects')
-                  .to('#wipe-line', { opacity: 1, duration: 0.05 }, 'projects+=0.01')
-                  .to('.projects-section', { clipPath: 'inset(0% 0% 0% 0%)', ease: 'none', duration: 0.99 }, 'projects')
-                  .to('#wipe-line', { x: 0, ease: 'none', duration: 0.99 }, 'projects')
-                  .to('.world-section', { opacity: 0.2, x: '-15vw', ease: 'none', duration: 0.99 }, 'projects')
-                  .to('#wipe-line', { opacity: 0, duration: 0.05 }, 'projects+=0.94');
+                  .set('#wipe-line-main', { x: '100vw', opacity: 0 }, 'projects')
+                  .set('#wipe-line-accent', { x: '100vw', opacity: 0 }, 'projects')
+                  .to(['#wipe-line-main', '#wipe-line-accent'], { opacity: 1, duration: 0.05 }, 'projects+=0.01')
+                  .to('.projects-section', { clipPath: 'polygon(-20% 0%, 100% 0%, 100% 100%, 0% 100%)', ease: 'none', duration: 0.99 }, 'projects')
+                  .to('#wipe-line-main', { x: 0, ease: 'none', duration: 0.99 }, 'projects')
+                  .to('#wipe-line-accent', { x: '-3vw', ease: 'none', duration: 0.99 }, 'projects')
+                  .to('.world-section', { opacity: 0, scale: 0.92, x: '-20vw', ease: 'none', duration: 0.99 }, 'projects')
+                  .to(['#wipe-line-main', '#wipe-line-accent'], { opacity: 0, duration: 0.05 }, 'projects+=0.94')
+                  // Slide-in child elements as Projects page enters
+                  .to('.animate-project-left', { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'projects+=0.4')
+                  .to('.animate-project-right', { x: 0, opacity: 1, duration: 0.6, ease: 'power2.out' }, 'projects+=0.4');
 
   }, []);
 
@@ -487,11 +513,18 @@ export default function App() {
       {/* Main Pages Container (Stacked Absolute Layout) */}
       <div className="horizontal-scroll-container relative z-10 w-full h-screen overflow-hidden">
         
-        {/* Wipe dividing line boundary */}
+        {/* Wipe dividing line boundary - Dual Accent Lines */}
+        {/* Main Cyan Glowing Line */}
         <div 
-          id="wipe-line"
-          className="absolute top-0 bottom-0 w-[3px] bg-ark-cyan shadow-[0_0_15px_#00f0ff] z-[99] pointer-events-none"
-          style={{ transform: 'translateX(100vw)', opacity: 0 }}
+          id="wipe-line-main"
+          className="absolute top-0 bottom-0 w-[4px] bg-ark-cyan shadow-[0_0_25px_rgba(0,240,255,0.85),_0_0_10px_#00f0ff] z-[99] pointer-events-none"
+          style={{ transform: 'translateX(100vw) skewX(-18deg)', transformOrigin: 'bottom left', opacity: 0 }}
+        />
+        {/* Secondary Green Accent Line */}
+        <div 
+          id="wipe-line-accent"
+          className="absolute top-0 bottom-0 w-[1.5px] bg-ark-green shadow-[0_0_15px_rgba(166,246,38,0.85)] z-[99] pointer-events-none"
+          style={{ transform: 'translateX(100vw) skewX(-18deg)', transformOrigin: 'bottom left', opacity: 0 }}
         />
         
         {/* ==================== 1. HERO INDEX PAGE ==================== */}

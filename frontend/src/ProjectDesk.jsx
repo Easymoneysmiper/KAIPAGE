@@ -94,7 +94,7 @@ export default function ProjectDesk() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-stretch">
           
           {/* Left panel: Interactive isometric workspace SVG (7 columns) */}
-          <div className="lg:col-span-7 flex flex-col justify-center items-center p-6 bg-[#070709] border border-white/5 rounded-sm relative min-h-[380px] lg:min-h-[500px]">
+          <div className="lg:col-span-7 flex flex-col justify-center items-center p-6 bg-[#070709] border border-white/5 rounded-sm relative min-h-[380px] lg:min-h-[500px] animate-project-left">
             <span className="absolute top-3 left-3 text-[8px] font-mono text-neutral-600 tracking-wider">
               INTERACTIVE_WORKSPACE // CLICK_DEVICE_TO_INSPECT
             </span>
@@ -218,7 +218,7 @@ export default function ProjectDesk() {
           </div>
 
           {/* Right panel: Terminal HUD Dossier & Log Simulator (5 columns) */}
-          <div className="lg:col-span-5 flex flex-col justify-between p-6 md:p-8 bg-[#0F0F12] border border-white/10 rounded-sm relative ark-border-box corner-br">
+          <div className="lg:col-span-5 flex flex-col justify-between p-6 md:p-8 bg-[#0F0F12] border border-white/10 rounded-sm relative ark-border-box corner-br animate-project-right">
             
             {/* Dossier top info */}
             <div>

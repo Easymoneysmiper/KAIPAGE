@@ -614,7 +614,7 @@ export default function OriginiumSharing({ isActive = false }) {
       </div>
 
       {/* ==================== LEFT COLUMN: LIST AND SELECTED DESCRIPTION ==================== */}
-      <div className="w-full lg:w-[32%] flex flex-col justify-between h-full pr-0 lg:pr-8 border-r-0 lg:border-r border-white/10 z-20 gap-6">
+      <div className="w-full lg:w-[32%] flex flex-col justify-between h-full pr-0 lg:pr-8 border-r-0 lg:border-r border-white/10 z-20 gap-6 animate-world-left">
         
         {/* Upper part: Tabs & List */}
         <div className="flex flex-col flex-1 overflow-hidden">
@@ -731,7 +731,7 @@ export default function OriginiumSharing({ isActive = false }) {
       </div>
 
       {/* ==================== MIDDLE COLUMN: MAIN VISUAL IMAGE & SLIDER ==================== */}
-      <div className="flex-1 flex flex-col justify-center h-full pl-0 lg:pl-10 mt-8 lg:mt-0 z-20 gap-4">
+      <div className="flex-1 flex flex-col justify-center h-full pl-0 lg:pl-10 mt-8 lg:mt-0 z-20 gap-4 animate-world-right">
         
         {/* Large featured graphic */}
         <div className="w-full aspect-[16/10] bg-[#070709] border border-white/10 rounded-sm relative overflow-hidden flex items-center justify-center shadow-[inset_0_0_25px_rgba(0,0,0,0.9)] group">
@@ -866,7 +866,7 @@ export default function OriginiumSharing({ isActive = false }) {
       </div>
 
       {/* ==================== RIGHT COLUMN: VERTICAL DISPLAY INDEX ==================== */}
-      <div className="hidden lg:flex w-[10%] h-full flex-col items-center justify-center border-l border-white/10 pl-6 relative select-none z-20">
+      <div className="hidden lg:flex w-[10%] h-full flex-col items-center justify-center border-l border-white/10 pl-6 relative select-none z-20 animate-world-index">
         
         {/* Halftone grid matrix background */}
         <div className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:10px_10px] opacity-40 -z-10" />
